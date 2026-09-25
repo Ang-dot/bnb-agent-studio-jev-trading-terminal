@@ -27,7 +27,9 @@ export default {
         return new Response(upstream.body,{status:upstream.status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
       } catch {return Response.json({error:'Backend temporarily unavailable; no action confirmed'}, {status:503});}
     }
-    if (operator) {url.pathname='/index.html';return env.ASSETS.fetch(new Request(url,request));}
+    // Pages redirects /index.html to /. Read the root asset internally so the
+    // browser stays on /operator and keeps using the authenticated API prefix.
+    if (operator) {url.pathname='/';return env.ASSETS.fetch(new Request(url,request));}
     return env.ASSETS.fetch(request);
   },
 };

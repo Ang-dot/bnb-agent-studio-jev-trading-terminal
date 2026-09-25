@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import { randomUUID } from 'node:crypto';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { initialState, type Store } from './store.js';
 import type { AgentState } from '../src/types.js';
 import type { SupportingEvidence } from '../src/enrichment.js';
@@ -12,6 +13,18 @@ export function claimLease(l:Lease,owner:string,now:number,ttl:number):Lease|nul
   return {owner,epoch:l.owner===owner&&l.expires>now?l.epoch:l.epoch+1,expires:now+ttl};
 }
 export interface JsonPersistence {read():Promise<string|undefined>;write(value:string):Promise<void>}
+// Lossless versioned encoding; old JSON rows remain readable. Bounded input and
+// output fail closed rather than silently pruning decision or memory history.
+export function encodeState(state:AgentState){
+  const raw=JSON.stringify(state);
+  if(Buffer.byteLength(raw)>64*1024*1024)throw new Error('Journal storage capacity reached');
+  const encoded='gzip-v1:'+gzipSync(raw).toString('base64');
+  if(Buffer.byteLength(encoded)>5*1024*1024)throw new Error('Journal storage capacity reached');
+  return encoded;
+}
+export function decodeState(data:string):AgentState {
+  return JSON.parse(data.startsWith('gzip-v1:')?gunzipSync(Buffer.from(data.slice(8),'base64'),{maxOutputLength:64*1024*1024}).toString('utf8'):data);
+}
 
 export class CloudStore implements Store {
   label='TiDB Cloud · TLS · fenced single worker';
@@ -59,11 +72,11 @@ export class CloudStore implements Store {
       await c.commit();return result;
     }catch(e){await c.rollback();this.expires=0;throw e;}finally{c.release();}
   }
-  async read(){const [rows]=await this.pool.query<mysql.RowDataPacket[]>('SELECT data FROM jev_terminal_state WHERE id=1');return JSON.parse(rows[0].data) as AgentState;}
+  async read(){const [rows]=await this.pool.query<mysql.RowDataPacket[]>('SELECT data FROM jev_terminal_state WHERE id=1');return decodeState(rows[0].data);}
   async mutate(fn:(s:AgentState)=>void){return this.fenced(async c=>{
     const [rows]=await c.query<mysql.RowDataPacket[]>('SELECT data FROM jev_terminal_state WHERE id=1 FOR UPDATE');
-    const state=JSON.parse(rows[0].data) as AgentState;fn(state);state.revision++;
-    await c.execute('UPDATE jev_terminal_state SET data=? WHERE id=1',[JSON.stringify(state)]);return state;
+    const state=decodeState(rows[0].data);fn(state);state.revision++;
+    await c.execute('UPDATE jev_terminal_state SET data=? WHERE id=1',[encodeState(state)]);return state;
   });}
   record(name:string):JsonPersistence {
     if(!/^[a-z0-9-]{1,64}$/.test(name))throw new Error('Invalid record');

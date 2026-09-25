@@ -1,42 +1,39 @@
-# JEV Trading Terminal hosting plan
+# JEV Trading Terminal hosting
 
-User-approved direction: NodeOps replaces AWS for backend hosting. On September 26, the user approved NodeOps's default region instead of requiring Singapore. This document is a plan, not a deployment record.
+Approved: NodeOps default region replaces AWS. Cloudflare Pages serves the frontend; dedicated TiDB stores durable state. No AWS resources were created.
 
-## Components
-
-| Component | Target |
+| Component | Location |
 | --- | --- |
-| Public read-only terminal | Cloudflare Pages; separate from the existing proposal site |
-| API and continuous GMGN/JEV/X/memory worker | NodeOps CreateOS; provider default region |
-| Durable ledger, decisions, evidence, monitor/replay state and worker lease | Dedicated PingCAP TiDB database |
+| Public read-only terminal | https://jev-trading-terminal.pages.dev |
+| Private operator terminal | https://jev-trading-terminal.pages.dev/operator |
+| API and continuous worker | https://production-jev-trading-terminal.tyzo.nodeops.app |
+| Private source | https://github.com/Ang-dot/jev-trading-terminal |
+| Database | TiDB jev_terminal, cluster 10365232367702429721, AWS Singapore |
 | Semantic memory | Existing dedicated Living Brain brain |
-| Operator authorization | Cloudflare Access plus backend token validation |
-| Source | Private GitHub repository: https://github.com/Ang-dot/jev-trading-terminal |
 
-## Deployment gates
+## Access and operation
 
-- Authenticate NodeOps and verify continuous execution without visitor traffic. Default managed-app placement is approved; a temporary sandbox is not a substitute.
-- Connect the NodeOps GitHub application only to the JEV repository. Confirm the actual permissions at installation; do not grant access to unrelated repositories.
-- Review NodeOps runtime secret protection and outbound connectivity to the existing providers and TiDB before transmitting credentials.
-- Keep all secrets, local databases, runtime observations, GMGN authentication material and private research outputs out of GitHub, container images and frontend bundles.
-- Migrate all remaining local SQLite and JSON state, preserving the paper ledger and decision history.
-- Require a database-backed single-worker lease across restarts and deployment overlap.
-- Add public read-only API projections, bounded provider-backed reads and authenticated operator-only mutations.
-- Verify the cloud service while paused before transferring operation from the laptop. Never run two active workers against the same agent session.
-- Keep real execution locked. No wallet signing keys are needed for this paper-only release.
+- Public requests cannot mutate state. Pages strips visitor authentication headers and adds a private origin secret server-side. Direct origin requests are denied except for non-sensitive health.
+- Cloudflare Access protects /operator, allowing only the approved operator email, with a 24-hour session and HTTP-only path-scoped cookie. Backend JWT verification independently checks signature, issuer, audience, expiry and exact email.
+- Provider credentials are NodeOps runtime configuration. Pages receives only the backend URL and proxy secret. No secrets, local databases or private research files are published to GitHub or frontend assets.
+- The image contains BNB Agent SDK and pinned GMGN CLI. Read-only GMGN needs only its API key; no signing private key or wallet signing key is deployed. Real execution remains locked.
+- One NodeOps replica: 500m CPU and 1024 MB. TiDB ownership leases fence writes and guard provider calls. New deployments boot paper execution paused; WORKER_ENABLED separately gates worker startup.
+- GitHub pushes automatically build deployments. Production promotion is manual: do not create a duplicate deployment after pushing. Unpromoted instances without runtime configuration fail closed.
+- TiDB stores the ledger, decisions, local memory journal, raw and normalized research archive, replay/monitor state, GMGN cooldown and worker lease. Versioned lossless compression keeps the journal within TiDB's 6 MB per-entry limit; legacy JSON rows remain readable.
+- Shared read budgets and caches bound chart queries. Opening a page never triggers a model assessment by itself.
 
-## Current status
+## Verified before cutover
 
-- NodeOps CreateOS CLI v0.0.29 authenticated successfully; account is currently on the free plan.
-- Private GitHub repository created and initial source published. The source passes 175 tests and the production build; a staged-file scan found no configured secret values or credential patterns. Local runtime data and private research outputs were not uploaded.
-- Singapore (`sgp1`) is listed in the provider zone catalog, but the authenticated product catalog currently exposes no `vm-terminal` product. Standard app/runtime settings do not expose region selection. Neither fact establishes that this account can deploy the backend in Singapore.
-- NodeOps dashboard and CLI authentication are complete. Its GitHub installation is connected; following explicit user approval, access was restricted to `Ang-dot/jev-trading-terminal`. A fresh NodeOps repository query returned exactly that one repository.
-- The authenticated Node.js deployment form exposes no region selector. The user approved default-region deployment; Singapore is no longer a blocker.
-- NodeOps project `a7d4ec88-7c7f-4192-8f86-793dbcd6baba` and production environment `c2fa75e1-49f8-4768-b4db-48149522cd19` were created in the default placement. Automatic environment promotion is disabled.
-- A secret-free health probe (commit `29ea583`) is deployed and its HTTPS `/api/health` returns 200. It explicitly reports `agentRunning: false` and `phase: hosting-preflight`; it is not the terminal. No provider credentials or paper history have been uploaded. A duplicate probe triggered by the GitHub push was put to sleep; it can be awakened through NodeOps.
-- Dedicated TiDB Starter cluster `10365232367702429721`, database `jev_terminal`, was provisioned in AWS Singapore. Its network allowlist includes only the migration operator's observed IPv4 and NodeOps's observed egress `49.12.122.157`, not a wildcard. The latter is observed, not guaranteed static: re-verify it after deployment changes. Monthly spend cap is currently $0; capacity/spend must be reviewed before ongoing use.
-- A database-scoped SSL-required SQL user is configured. Live TiDB integration checks verified TLS, exclusive lease ownership, stale-writer rejection and durable records without changing the paper ledger. The new database does not yet contain the local ledger/history.
-- Production adaptation is in progress: Access JWT validation, origin protection, shared read budgets, public-state projection and fenced TiDB storage have unit coverage. These modules are not yet wired into `server/index.ts`; the current Dockerfile runs only the safe health probe. Existing tests and TypeScript checks pass (181 tests).
-- Cloudflare dashboard sign-in is complete. Zero Trust Free activation is blocked at checkout: the UI requires billing details, terms acceptance and authorization for overage charges. The user must complete or explicitly direct this step. Nothing was submitted.
-- Remaining work: finish runtime wiring and durable state migration; set up operator Access; securely inject runtime provider configuration; deploy paused and verify no-visitor execution; publish the Cloudflare Pages terminal; then transfer the paper session from the laptop. The original local runtime is healthy and remains untouched.
-- No AWS cloud resources were created. AWS CLI authorization is no longer the active deployment path.
+- Frontend published. Public page returns 200; public writes return 403; unauthenticated operator paths redirect to Access. Operator login reaches private controls.
+- Backend responds through NodeOps and Pages with hosting cloud, liveExecution false and workerActive false before migration. Direct origin state reads return 403.
+- Tests cover JWT validation, redaction, proxy boundaries, read budgets, worker fencing, drainage and lossless journal round-trip.
+- The original laptop JEV worker was paused and stopped after its active assessment finished. Its original databases remain intact.
+- Migration script scripts/migrate-cloud.ts requires an explicit source and --apply. It refuses an active laptop endpoint, another cloud lease or overwrite of a nonempty cloud ledger. Evidence import is idempotent; the ledger, decisions and memory journal are checked for exact equality. Cloud worker remains disabled until verified migration is complete.
+
+## Operational constraints
+
+- TiDB permits exact observed migration and NodeOps IPv4 addresses, not a wildcard. NodeOps egress is observed, not guaranteed static; recheck connectivity after placement changes.
+- TiDB monthly spend cap is currently $0. Review usage before free capacity is exhausted. Storage errors fail closed rather than reset history.
+- Verify no-visitor execution by observing autonomous timestamps with the terminal closed. This does not establish an uptime SLA.
+- NodeOps project a7d4ec88-7c7f-4192-8f86-793dbcd6baba; production environment c2fa75e1-49f8-4768-b4db-48149522cd19.
+- Operator Access application 74f7b331-b428-4dab-9265-deff89e09aea. Previews have a separate Access policy. The existing proposal site is untouched.

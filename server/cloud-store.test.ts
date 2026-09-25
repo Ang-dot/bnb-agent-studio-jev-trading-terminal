@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { claimLease, ownsLease } from './cloud-store.js';
+import { claimLease, ownsLease, encodeState, decodeState } from './cloud-store.js';
+import { initialState } from './store.js';
+it('losslessly stores large journals below TiDB entry size and reads legacy JSON',()=>{
+  const state=initialState();
+  const large={...state,metadata:'realistic repeated provider evidence '.repeat(220000)};
+  const encoded=encodeState(large);
+  expect(Buffer.byteLength(encoded)).toBeLessThan(6291456);
+  expect(decodeState(encoded)).toEqual(large);
+  expect(decodeState(JSON.stringify(state))).toEqual(state);
+  expect(()=>decodeState('gzip-v1:corrupt')).toThrow();
+});
 describe('single worker fencing',()=>{
   it('does not let a different worker claim an unexpired lease',()=>{
     expect(claimLease({owner:'a',epoch:1,expires:2000},'b',1000,5000)).toBeNull();

@@ -4,6 +4,11 @@ const env={BACKEND_ORIGIN:'https://production-example.tyzo.nodeops.app',ORIGIN_S
 const url='https://jev-trading-terminal.pages.dev';
 afterEach(()=>vi.unstubAllGlobals());
 describe('Pages API boundary',()=>{
+  it('serves the operator shell without triggering the index.html canonical redirect',async()=>{
+    const asset=vi.fn(async request=>new Response(new URL(request.url).pathname));
+    const response=await worker.fetch(new Request(url+'/operator'),{...env,ASSETS:{fetch:asset}});
+    expect(response.status).toBe(200);expect(await response.text()).toBe('/');
+  });
   it('rejects public writes and missing operator assertions without reaching origin',async()=>{
     const upstream=vi.fn();vi.stubGlobal('fetch',upstream);
     expect((await worker.fetch(new Request(url+'/api/control',{method:'POST'}),env)).status).toBe(403);
