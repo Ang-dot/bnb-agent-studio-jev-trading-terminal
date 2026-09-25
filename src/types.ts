@@ -192,6 +192,7 @@ export interface AgentState {
   lastCycleAt: number | null;
 }
 export interface TerminalState extends AgentState {
+  access?: { operator: boolean };
   exitError?: string | null;
   pools: Pool[];
   providers: ProviderStatus[];

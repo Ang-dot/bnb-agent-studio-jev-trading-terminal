@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
+import type { JsonPersistence } from './cloud-store.js';
 import type { Candle } from "../src/types.js";
 import type { Launch } from "../src/launches.js";
 import type { ReplayInput, ReplayJudgment, ReplayRun } from "../src/replay.js";
@@ -191,11 +192,13 @@ export class ReplayService {
     private feed: LaunchFeed,
     private verifier: GraduationVerifier,
     private judge = judgeReplay,
-    private file = resolve(".data/replay.json"),
+    private file: string | JsonPersistence = resolve(".data/replay.json"),
   ) {}
   async init() {
     try {
-      const saved = JSON.parse(await readFile(this.file, "utf8"));
+      const raw = typeof this.file === 'string' ? await readFile(this.file, 'utf8') : await this.file.read();
+      if (raw === undefined) return this;
+      const saved = JSON.parse(raw);
       if (
         saved.version === "replay-v1" &&
         typeof saved.id === "string" &&
@@ -257,6 +260,7 @@ export class ReplayService {
     return this.run;
   }
   private async save() {
+    if (typeof this.file !== 'string') { await this.file.write(JSON.stringify(this.run)); return; }
     await mkdir(dirname(this.file), { recursive: true });
     await writeFile(`${this.file}.tmp`, JSON.stringify(this.run), {
       mode: 0o600,

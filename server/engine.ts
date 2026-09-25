@@ -29,7 +29,7 @@ export class Engine {
   constructor(
     readonly store: Store,
     readonly providers: Providers,
-    private evidence?: (token: string, at: number) => SupportingEvidence | undefined,
+    private evidence?: (token: string, at: number) => SupportingEvidence | undefined | Promise<SupportingEvidence | undefined>,
     private learning?: MemoryLoop,
   ) {}
   async discover() {
@@ -162,7 +162,7 @@ export class Engine {
       stage = "Living Brain";
       decision.supportingEvidenceAt = Date.now();
       try {
-        const evidence=this.evidence?.(pool.token.toLowerCase(),decision.supportingEvidenceAt);
+        const evidence=await this.evidence?.(pool.token.toLowerCase(),decision.supportingEvidenceAt);
         if(evidence?.token===pool.token.toLowerCase()&&evidence.completedAt<=decision.supportingEvidenceAt&&evidence.startedAt>=decision.supportingEvidenceAt-300000){
           decision.supportingEvidence=structuredClone(evidence);
           decision.researchInput=researchInput(evidence,pool.token,pool.address,decision.supportingEvidenceAt);

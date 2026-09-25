@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
+import type { JsonPersistence } from './cloud-store.js';
 import type { Launch, LaunchFeedState, Graduation } from "../src/launches.js";
 import type { Decision } from "../src/types.js";
 import {
@@ -40,7 +41,7 @@ export class MonitorService {
   private writes: Promise<void> = Promise.resolve();
   constructor(
     private deps: Dependencies,
-    private file: string | null = resolve(".data/monitor.json"),
+    private file: string | JsonPersistence | null = resolve(".data/monitor.json"),
   ) {}
   private now() {
     return (this.deps.now ?? Date.now)();
@@ -48,6 +49,8 @@ export class MonitorService {
   async init() {
     if (!this.file) return this;
     try {
+      const raw = typeof this.file === 'string' ? await readFile(this.file, 'utf8') : await this.file.read();
+      if (raw === undefined) return this;
       const saved = z
         .object({
           version: z.literal(1),
@@ -61,7 +64,7 @@ export class MonitorService {
             }),
           ),
         })
-        .parse(JSON.parse(await readFile(this.file, "utf8")));
+        .parse(JSON.parse(raw));
       this.state.enabled = saved.enabled;
       this.attempts = saved.attempts;
       this.state.items = saved.records.map((r) => ({
@@ -99,6 +102,7 @@ export class MonitorService {
     this.writes = this.writes
       .catch(() => {})
       .then(async () => {
+        if (typeof file !== 'string') { await file.write(payload); return; }
         await mkdir(dirname(file), { recursive: true });
         await writeFile(`${file}.tmp`, payload, { mode: 0o600 });
         await rename(`${file}.tmp`, file);

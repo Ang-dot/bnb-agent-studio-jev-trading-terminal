@@ -7,6 +7,10 @@ import { gmgnRead } from "./launch-feed.js";
 import type { EvidenceReceipt, SupportingEvidence, WalletEvidence } from "../src/enrichment.js";
 
 export interface RawObservation { key: string; requestedAt: number; receivedAt: number; raw?: unknown; error?: true }
+export interface EvidenceRepository {
+  save(e: SupportingEvidence, raw: RawObservation[]): void | Promise<void>;
+  latest(token: string, at?: number, maxAge?: number): SupportingEvidence | undefined | Promise<SupportingEvidence | undefined>;
+}
 const obj = (v: unknown): Record<string, any> => v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, any> : {};
 const addr = (v: unknown) => typeof v === "string" && /^0x[0-9a-fA-F]{40}$/.test(v) ? v.toLowerCase() : null;
 const number = (v: unknown, signed = false) => (typeof v === "number" || typeof v === "string" && v.trim() !== "") && Number.isFinite(Number(v)) && (signed || Number(v) >= 0) ? Number(v) : null;
@@ -110,7 +114,7 @@ export class EvidenceCollector {
   private tail: Promise<void> = Promise.resolve();
   private attempts = new Map<string, number>();
   private smartCache?: RawObservation;
-  constructor(readonly archive: EvidenceArchive, private read = gmgnRead, private clock = Date.now, private wait: () => Promise<unknown> = () => delay(1200)) {}
+  constructor(readonly archive: EvidenceRepository, private read = gmgnRead, private clock = Date.now, private wait: () => Promise<unknown> = () => delay(1200)) {}
   refresh(token: string): Promise<void> {
     token = token.toLowerCase();
     if (!addr(token)) return Promise.resolve();
@@ -135,7 +139,7 @@ export class EvidenceCollector {
     const info = await call("info", ["token", "info", "--chain", "bsc", "--address", token]);
     if (info.error || addr(obj(info.raw).address) !== token) {
       const e = normalizeEvidence(token, [{ ...info, raw: undefined, error: true }], this.clock());
-      this.archive.save(e, raws); return;
+      await this.archive.save(e, raws); return;
     }
     const creator = addr(obj(obj(info.raw).dev).creator_address);
     if (creator) await call("creator", ["portfolio", "created-tokens", "--chain", "bsc", "--wallet", creator, "--order-by", "token_ath_mc", "--direction", "desc"]);
@@ -144,7 +148,7 @@ export class EvidenceCollector {
     if (this.smartCache && this.clock() - this.smartCache.receivedAt < 60000) raws.push(structuredClone(this.smartCache));
     else { const r = await call("smartmoney", ["track", "smartmoney", "--chain", "bsc", "--limit", "100"]); if (!r.error) this.smartCache = r; }
     const e = normalizeEvidence(token, raws, this.clock());
-    const previous = this.archive.latest(token, e.startedAt, 3600000);
+    const previous = await this.archive.latest(token, e.startedAt, 3600000);
     if (previous) {
       e.comparison = { previousId: previous.id, previousAt: previous.completedAt,
         top10DeltaPp: e.top10Share !== null && previous.top10Share !== null ? (e.top10Share - previous.top10Share) * 100 : null,
@@ -153,6 +157,6 @@ export class EvidenceCollector {
           return w.holdingShare !== null && old?.holdingShare != null ? [{ address: w.address, shareDeltaPp: (w.holdingShare - old.holdingShare) * 100 }] : [];
         }) };
     }
-    this.archive.save(e, raws);
+    await this.archive.save(e, raws);
   }
 }
