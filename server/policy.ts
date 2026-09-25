@@ -1,0 +1,98 @@
+import type { Action, Check, Judgment, Ledger, Position, Snapshot, XResearch } from "../src/types.js";
+import { PAPER_POLICY } from "../src/paper-settings.js";
+export { PAPER_POLICY };
+export const exposure = (ledger: Ledger) => ledger.positions.reduce((sum, p) => sum + p.costUsd, 0);
+export const exposureLimit = (ledger: Ledger) => Math.min(PAPER_POLICY.maxExposureUsd, ledger.initialCashUsd * 0.3);
+export const netExitUnit = (s: Snapshot) => s.priceUsd * (1 - PAPER_POLICY.slippageBps / 10000) * (1 - PAPER_POLICY.feeBps / 10000);
+export const emptyLedger = (): Ledger => ({
+  cashUsd: 2000, initialCashUsd: 2000, positions: [], fills: [], consumedDecisions: [], realizedPnlUsd: 0, dailyLoss: {},
+});
+export function marketExecutable(s: Snapshot, now: number) {
+  return s.source === "bitquery" && Number.isFinite(s.priceUsd) && s.priceUsd > 0 &&
+    [s.marketAt, s.observedAt].every(t => Number.isFinite(t) && t <= now && now - t <= PAPER_POLICY.maxAgeMs);
+}
+export function buyAmount(ledger: Ledger, s: Snapshot) {
+  const tokenCost = ledger.positions.filter(p => p.token.toLowerCase() === s.token.toLowerCase()).reduce((n,p)=>n+p.costUsd,0);
+  const budget = Math.min(ledger.cashUsd, PAPER_POLICY.maxPositionUsd-tokenCost, exposureLimit(ledger)-exposure(ledger));
+  // Round DOWN to cents so fees can never overrun a cost budget.
+  return Math.max(0, Math.floor(Math.min(PAPER_POLICY.orderUsd, budget / (1 + PAPER_POLICY.feeBps / 10000))*100)/100);
+}
+export interface PolicyContext {
+  now: number; approved: boolean; halted: boolean; memoryReady: boolean; ledger: Ledger;
+  snapshot: Snapshot; judgment: Judgment; research: XResearch;
+}
+export function evaluatePolicy(c: PolicyContext): {action: Action; mode:"paper"; checks:Check[]; reasons:string[]} {
+  const s=c.snapshot, j=c.judgment, p=PAPER_POLICY;
+  const position=c.ledger.positions.find(x=>x.pool===s.pool);
+  const check=(label:string,pass:boolean,detail:string):Check=>({label,pass,detail});
+  const checks = [
+    check("Kill switch",!c.halted,"No execution while the stop is latched."),
+    check("Fresh primary price",marketExecutable(s,c.now),"Fresh Bitquery price required, within 90 seconds and never in the future."),
+    check("Jev response",["buy","sell","hold"].includes(j.action) && [j.confidence,j.quality,j.toxic,...Object.values(j.probabilities)].every(Number.isFinite) &&
+      j.confidence>=0 && j.confidence<=1 && j.quality>=0 && j.quality<=3 && j.toxic>=0 && j.toxic<=1,"Typed model outputs must be valid."),
+  ];
+  if(j.action==="buy") {
+    const amount=buyAmount(c.ledger,s);
+    checks.push(
+      check("Operator approval",c.approved,"Approved pool or freshly qualified launch in an armed paper session."),
+      check("Valid market data",[s.liquidityUsd,s.volume24h,s.change1h,s.buyCount,s.sellCount].every(Number.isFinite),"Missing entry evidence is not a zero."),
+      check("Liquidity",s.liquidityUsd>=p.minLiquidityUsd,"Paper entry floor: $20,000 pool liquidity."),
+      check("Memory retrieval",c.memoryReady,"Living Brain must respond; no relevant memories is a valid cold start."),
+      check("X research freshness",!!c.research && ["ready","no_results"].includes(c.research.status) && c.research.token===s.token &&
+        c.research.searchCalls>0 && c.research.window.to<=c.research.collectedAt && c.research.collectedAt<=c.now &&
+        c.research.window.to<=c.now && c.now-c.research.window.to<=300000 && c.research.expiresAt>c.now,"Contract-specific search receipt must be within five minutes."),
+      check("Cited X context",c.research?.status==="ready" && c.research.sources.length>0,"At least one in-window, provider-cited contract match; a citation is not proof."),
+      check("Decision confidence",j.confidence>=p.confidence,"Experimental threshold: 0.80, not a win probability."),
+      check("Setup quality",j.quality>=p.minQuality,"Experimental threshold: 2 / 3."),
+      check("Toxic narrative",j.toxic<=p.maxToxic,"Evidence risk probability at most 0.25."),
+      check("Daily realized loss",(c.ledger.dailyLoss[new Date(c.now).toISOString().slice(0,10)]??0)<p.dailyLossUsd,"Pause new entries after $200 gross realized losses per UTC day; exits remain available."),
+      check("Cash",c.ledger.cashUsd>=10.03,"At least $10 plus modeled fees for an entry."),
+      check("Position ceiling",amount>=10,"Up to $150 per token including fees; final add sizes to remaining headroom."),
+      check("Total exposure",exposure(c.ledger)<exposureLimit(c.ledger),"Remaining entry cost capped at $600 or 30% of starting capital, whichever is lower."),
+      check("Portfolio slots",!!position || c.ledger.positions.length<p.maxPositions,"At most six paper positions."),
+      check("One pool per token",!c.ledger.positions.some(x=>x.token.toLowerCase()===s.token.toLowerCase() && x.pool!==s.pool),"Do not double-count a token as a new slot."),
+      check("Add only to strength",!position || ((position.takeProfits??0)===0 && (position.entries??1)<3 &&
+        netExitUnit(s)*position.quantity>=position.costUsd*1.1 && c.now-(position.lastEntryAt??position.openedAt)>=120000),
+        "Fresh JEV BUY, +10% indicative net return and two-minute cooldown required to add. Max three entries; no averaging down or adding after a trim."),
+    );
+  }
+  if(j.action==="sell") checks.push(check("Inventory",!!position && position.token.toLowerCase()===s.token.toLowerCase(),"Spot only: sell existing matching inventory."));
+  const failures=checks.filter(x=>!x.pass).map(x=>x.label+": "+x.detail);
+  return {action:failures.length?"hold":j.action,mode:"paper",checks,reasons:failures.length?failures:[j.action==="hold"?"JEV is waiting for a better setup.":"Paper policy checks passed."]};
+}
+export interface FillOptions {sellFraction?:number; reason?:string}
+export function applyPaperFill(ledger:Ledger,s:Snapshot,side:"buy"|"sell",decisionId:string,now:number,options:FillOptions={}):Ledger {
+  if(ledger.consumedDecisions.includes(decisionId)) return ledger;
+  if(!Number.isFinite(s.priceUsd)||s.priceUsd<=0) throw new Error("Invalid fill price");
+  const next=structuredClone(ledger),p=PAPER_POLICY;
+  const price=s.priceUsd*(1+(side==="buy"?1:-1)*p.slippageBps/10000);
+  const position=next.positions.find(x=>x.pool===s.pool);
+  let quantity:number,fee:number,pnl=0;
+  const fraction=options.sellFraction??1;
+  if(!Number.isFinite(fraction)||fraction<=0||fraction>1) throw new Error("Invalid sell fraction");
+  if(side==="buy") {
+    const amount=buyAmount(next,s);
+    if(amount<10 || (!position&&next.positions.length>=p.maxPositions) ||
+      next.positions.some(x=>x.token.toLowerCase()===s.token.toLowerCase()&&x.pool!==s.pool)) throw new Error("Position limit");
+    if(position && ((position.takeProfits??0)>0 || (position.entries??1)>=3 ||
+      netExitUnit(s)*position.quantity<position.costUsd*1.1 || now-(position.lastEntryAt??position.openedAt)<120000)) throw new Error("Add requires strength and cooldown");
+    fee=amount*p.feeBps/10000; quantity=amount/price;
+    next.cashUsd-=amount+fee;
+    if(position) {
+      position.quantity+=quantity; position.costUsd+=amount+fee;
+      position.entries=(position.entries??1)+1; position.lastEntryAt=now;
+      position.peakNetUnitUsd=Math.max(position.peakNetUnitUsd??0,netExitUnit(s));
+    } else next.positions.push({pool:s.pool,token:s.token,name:s.name,quantity,costUsd:amount+fee,openedAt:now,lastEntryAt:now,entries:1,takeProfits:0,peakNetUnitUsd:netExitUnit(s)});
+  } else {
+    if(!position || position.token.toLowerCase()!==s.token.toLowerCase()) throw new Error("No position to sell");
+    quantity=position.quantity*fraction; fee=quantity*price*p.feeBps/10000;
+    const cost=position.costUsd*fraction;
+    pnl=quantity*price-fee-cost; next.cashUsd+=quantity*price-fee; next.realizedPnlUsd+=pnl;
+    if(fraction===1) next.positions=next.positions.filter(x=>x.pool!==s.pool);
+    else {position.quantity-=quantity;position.costUsd-=cost;if(options.reason?.startsWith("take-profit")) position.takeProfits=(position.takeProfits??0)+1;}
+    const day=new Date(now).toISOString().slice(0,10);
+    next.dailyLoss[day]=(next.dailyLoss[day]??0)+Math.max(0,-pnl);
+  }
+  next.fills.unshift({id:"paper-"+decisionId,decisionId,pool:s.pool,name:s.name,side,priceUsd:price,quantity,feeUsd:fee,time:now,mode:"paper",realizedPnlUsd:pnl,reason:options.reason??"jev",fraction:side==="sell"?fraction:undefined});
+  next.consumedDecisions.push(decisionId); return next;
+}

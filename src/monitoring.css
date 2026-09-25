@@ -1,0 +1,242 @@
+.auto-monitor {
+  margin: 18px 24px 0;
+  padding: 20px;
+  border: 1px solid #e8dcae;
+  border-radius: 10px;
+  background: linear-gradient(115deg, #fffbef, #fff 75%);
+}
+.auto-monitor-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+.auto-eyebrow {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font: 10px var(--mono);
+  letter-spacing: 0.8px;
+  color: #957421;
+}
+.auto-monitor h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  margin: 9px 0;
+}
+.auto-monitor p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #748093;
+  margin: 0;
+}
+.auto-monitor-heading > button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid #dacfad;
+  border-radius: 6px;
+  background: #fff;
+  color: #76601e;
+  font-size: 11px;
+}
+.auto-thresholds {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 17px 0 12px;
+}
+.auto-thresholds span {
+  border: 1px solid #eee3bd;
+  background: #fffdf6;
+  color: #887130;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font: 10px var(--mono);
+}
+.auto-monitor-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  color: #8290a3;
+  margin-bottom: 13px;
+}
+.auto-watch-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.auto-watch-cards > button {
+  border: 1px solid #e8e9ea;
+  border-radius: 7px;
+  background: #fff;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  padding: 12px;
+  color: #56647b;
+}
+.auto-watch-cards > button > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.auto-watch-cards strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  color: #29364a;
+}
+.auto-watch-cards span {
+  font-size: 11px;
+  color: #a37c18;
+}
+.auto-watch-cards small {
+  font: 9px var(--mono);
+  line-height: 1.5;
+}
+.auto-monitor .auto-empty {
+  padding: 14px;
+  border: 1px dashed #e3dfd2;
+  border-radius: 7px;
+  font-size: 11px;
+}
+.auto-footnote {
+  display: block;
+  font-size: 10px;
+  line-height: 1.65;
+  color: #8b94a3;
+  margin-top: 12px;
+}
+.auto-monitor .auto-warning {
+  color: #a96036;
+  background: #fff1e6;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.launch-monitoring {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e8ecf1;
+  background: #fffdf7;
+}
+.launch-monitor-heading {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  color: #967322;
+}
+.launch-monitor-heading > span {
+  margin-left: auto;
+  font: 10px var(--mono);
+  color: #8a94a5;
+}
+.launch-monitoring p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #7d8799;
+  margin: 10px 0;
+}
+.launch-monitoring summary {
+  font-size: 11px;
+  color: #647389;
+  cursor: pointer;
+  padding: 8px 0;
+}
+.launch-monitor-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 7px;
+}
+.launch-monitor-checks > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #a0a8b4;
+}
+.launch-monitor-checks svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.launch-monitor-checks .passed > svg {
+  color: #39a57c;
+}
+.launch-monitor-checks strong {
+  font-size: 10px;
+  color: #647389;
+  font-weight: 500;
+}
+.launch-monitor-checks small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+  margin-top: 3px;
+}
+.auto-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #a68122;
+  font-size: 10px;
+}
+@media (max-width: 1050px) {
+  .auto-monitor {
+    margin: 16px 15px 0;
+    padding: 16px;
+  }
+  .auto-watch-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .auto-monitor-heading {
+    gap: 12px;
+  }
+  .auto-monitor h2 {
+    font-size: 18px;
+  }
+}
+@media (max-width: 760px) {
+  .auto-monitor {
+    margin: 12px 10px 0;
+    padding: 13px;
+  }
+  .auto-monitor-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .auto-monitor h2 {
+    font-size: 19px;
+    line-height: 1.3;
+  }
+  .auto-monitor-meta {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .auto-watch-cards {
+    grid-template-columns: 1fr;
+  }
+  .auto-thresholds span {
+    font-size: 9px;
+  }
+  .launch-monitor-checks {
+    grid-template-columns: 1fr;
+  }
+  .launch-monitor-heading {
+    flex-wrap: wrap;
+  }
+  .launch-monitor-heading > span {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  .launch-monitoring {
+    padding: 14px;
+  }
+  .launch-monitoring summary {
+    min-height: 44px;
+  }
+}

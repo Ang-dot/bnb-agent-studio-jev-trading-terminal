@@ -1,0 +1,42 @@
+.hunt-board{border:1px solid #e9dfbc;border-radius:8px;background:#fffdf5;padding:18px 20px;margin:16px 0;color:#202839}
+.hunt-heading,.hunt-subheading,.hunt-token{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hunt-eyebrow{display:flex;align-items:center;gap:6px;font:10px "IBM Plex Mono",monospace;letter-spacing:.08em;color:#826400}
+.hunt-heading h2{font-size:21px;letter-spacing:-.6px;margin:8px 0 0}
+.hunt-budget{display:flex;flex-direction:column;gap:4px;text-align:right;font:11px "IBM Plex Mono",monospace;color:#657084;white-space:nowrap}
+.hunt-budget strong{font-size:15px;color:#202839}
+.hunt-playbook{display:flex;gap:12px;flex-wrap:wrap;margin:15px 0;padding:10px 0;border-top:1px solid #eee5ce;border-bottom:1px solid #eee5ce;font-size:11px;color:#657084}
+.hunt-playbook b{color:#202839;margin-right:4px;font-family:"IBM Plex Mono",monospace}
+.hunt-subheading{font-size:10px;color:#687388;margin-bottom:9px}
+.hunt-subheading strong{display:flex;align-items:center;gap:6px;color:#4d4021;font-size:12px}
+.hunt-candidates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hunt-candidate{padding:12px;border:1px solid #e8e9ed;background:white;border-radius:6px;text-align:left;min-width:0;transition:border-color .18s,transform .18s}
+.hunt-candidate:hover{border-color:#c39816;transform:translateY(-2px)}
+.hunt-candidate:focus-visible{outline:2px solid #977100;outline-offset:3px}
+.hunt-token strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.hunt-token>span{display:flex;align-items:center;gap:4px;font-size:9px;color:#6d7686;text-align:right}
+.hunt-token .hunt-qualified{color:#147759}
+.hunt-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:13px 0}
+.hunt-numbers span{font-size:9px;color:#6d7686;display:flex;flex-direction:column;gap:4px}
+.hunt-numbers b{font:12px "IBM Plex Mono",monospace;color:#202839}
+.hunt-meter{height:3px;background:#f0f1f4;overflow:hidden;border-radius:3px}
+.hunt-meter span{display:block;height:100%;background:#e8b923;transition:width .5s}
+.hunt-candidate small{display:flex;gap:5px;align-items:flex-start;font-size:10px;line-height:1.5;color:#657084;margin-top:8px}
+.hunt-candidate small svg{flex-shrink:0;margin-top:2px}
+.hunt-note{font-size:10px;color:#687388;margin:10px 0 0;line-height:1.5}
+.hunt-empty{grid-column:1/-1;padding:16px 0;color:#657084;font-size:12px}
+.paper-stop{background:#fff1ef!important;color:#a64137!important;border:1px solid #efd0cb!important}
+@media(max-width:760px){.hunt-board{padding:14px}.hunt-candidates{grid-template-columns:1fr}.hunt-candidate:nth-child(n+3){display:none}.hunt-heading h2{font-size:18px}.hunt-budget{font-size:9px}.hunt-playbook{gap:9px}.hunt-subheading{align-items:flex-start}.hunt-subheading>span{max-width:140px;text-align:right}.hunt-token>span{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.hunt-candidate,.hunt-meter span{transition:none}.hunt-candidate:hover{transform:none}}
+.motion-off .hunt-candidate,.motion-off .hunt-meter span{transition:none}
+.position-book{display:grid;gap:10px;padding:12px}.position-card{display:grid;grid-template-columns:1fr auto;text-align:left;gap:12px;background:#fff;border:1px solid #e8e9ed;border-radius:6px;padding:14px}.position-card>div{display:flex;flex-direction:column;gap:5px}.position-card strong{font-size:13px}.position-card span,.position-card small{font-size:10px;color:#657084}.position-card .position-plan{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:8px}.position-plan span{border:1px solid #e8e9ed;border-radius:4px;padding:5px}.position-plan .done{color:#147759;background:#eef9f3}.position-card small{grid-column:1/-1}
+@media(min-width:1100px){
+  .hunt-board{display:grid;grid-template-columns:210px minmax(0,1fr);column-gap:20px;padding:14px 18px}
+  .hunt-heading{grid-column:1;grid-row:1/4;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:2px 0 8px}
+  .hunt-heading h2{font-size:18px;line-height:1.25;margin:7px 0 12px}
+  .hunt-budget{text-align:left}.hunt-budget strong{font-size:13px}
+  .hunt-subheading{grid-column:2;grid-row:1;margin-bottom:7px}
+  .hunt-candidates{grid-column:2;grid-row:2}
+  .hunt-playbook{grid-column:2;grid-row:3;margin:7px 0 0;padding:7px 0 0;border-bottom:0}
+  .hunt-note{grid-column:1/-1;grid-row:4;margin-top:8px}
+  .hunt-candidate{padding:10px}.hunt-numbers{margin:10px 0}.hunt-candidate small{font-size:10px}
+}
