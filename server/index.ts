@@ -6,7 +6,7 @@ import { SqliteStore, TiDBStore } from "./store.js";
 import { Providers } from "./providers.js";
 import { Engine, liveBlockers } from "./engine.js";
 import { inspectChain, LockedLiveExecutor } from "./bnb.js";
-import { LaunchFeed } from "./launch-feed.js";
+import { LaunchFeed, configureGmgnRuntime } from "./launch-feed.js";
 import { GraduationVerifier, readGraduation } from "./graduation.js";
 import { ReplayService, REPLAY_QUESTIONS, judgeReplay } from "./replay.js";
 import { MonitorService } from "./monitor.js";
@@ -14,6 +14,9 @@ import { randomUUID } from "node:crypto";
 import { paperControl } from "./control.js";
 import { EvidenceArchive, EvidenceCollector } from "./enrichment.js";
 import { MemoryLoop } from './memory-loop.js';
+import { CloudStore } from './cloud-store.js';
+import { hostedSettings, cloudAccess, publicState, SharedReadCache } from './hosting.js';
+import { WorkerRuntime } from './worker-runtime.js';
 
 const port = z.coerce
   .number()
@@ -21,15 +24,21 @@ const port = z.coerce
   .min(1024)
   .max(65535)
   .parse(process.env.PORT || 8787);
-const store = process.env.TIDB_DATABASE_URL
+const hosting = hostedSettings(process.env);
+const cloud = hosting ? await new CloudStore(process.env.TIDB_DATABASE_URL!).init().catch(()=>{throw new Error('Cloud storage unavailable');}) : null;
+const store = cloud ?? (process.env.TIDB_DATABASE_URL
   ? await new TiDBStore(process.env.TIDB_DATABASE_URL).init()
-  : new SqliteStore();
+  : new SqliteStore());
+const worker = new WorkerRuntime(cloud ? ()=>cloud.assertLease() : undefined);
+const wantsWorker = !hosting || process.env.WORKER_ENABLED === 'true';
+const publicReads = new SharedReadCache();
 // Always boot paused; deployment/restart is never authorization to resume trading.
-await store.mutate((s) => {
+if (!cloud) await store.mutate((s) => {
   s.running = false;
 });
-const providers = new Providers();
-const evidenceArchive = new EvidenceArchive();
+const guardedFetch: typeof fetch = async (input,init) => { await worker.assertActive();return fetch(input,init); };
+const providers = new Providers(process.env, guardedFetch);
+const evidenceArchive = cloud ?? new EvidenceArchive();
 const evidenceCollector = new EvidenceCollector(evidenceArchive);
 const learning = new MemoryLoop(store, providers);
 const engine = new Engine(store, providers, (token, at) => evidenceArchive.latest(token, at), learning);
@@ -38,20 +47,21 @@ const graduations = new GraduationVerifier(launch =>
   readGraduation(launch, token => providers.poolForToken(token)),
 );
 const replays = await new ReplayService(launches, graduations, (input) =>
-  providers.track("Jev", () => judgeReplay(input)),
+  providers.track("Jev", () => judgeReplay(input, process.env, guardedFetch)), cloud?.record('replay'),
 ).init();
 const monitor = await new MonitorService({
   feed: () => launches.state,
   activity: () => launches.activity(),
   verify: (launch) => graduations.verify(launch, true),
   available: async () =>
+    worker.active &&
     !engine.busy &&
     !(await store.read()).halted &&
     replays.run?.status !== "running",
   assess: async (launch, verification, context, active) => {
     // This callback is reached only after monitoring qualification. Fetch in the
     // background, never wait for enrichment before a decision or an exit.
-    void evidenceCollector.refresh(launch.address);
+    void worker.run(()=>evidenceCollector.refresh(launch.address));
     const pool = await providers.pool(verification.pool!);
     if (pool.token.toLowerCase() !== launch.address || !active())
       throw new Error("Monitoring evidence unavailable");
@@ -61,11 +71,12 @@ const monitor = await new MonitorService({
     // Only the background monitor may request paper execution. Manual inspection remains read-only.
     return (await engine.cycle(pool.address, { context, active, paper:true }))[0];
   },
-}).init();
+}, cloud?.record('monitor')).init();
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb" }));
-app.use((req, res, next) => {
+if (hosting) app.use(cloudAccess(hosting));
+else app.use((req, res, next) => {
   // Local-only first slice. Do not expose behind a public proxy without operator authentication.
   const host = req.headers.host;
   if (![`localhost:${port}`, `127.0.0.1:${port}`].includes(host ?? ""))
@@ -82,16 +93,25 @@ app.use((req, res, next) => {
   }
   next();
 });
+app.use('/api', async(req,res,next)=>{
+  if (!['GET','HEAD'].includes(req.method)) {
+    try {await worker.assertActive();} catch {return void res.status(503).json({error:'Worker is not active; no action was taken'});}
+  }
+  next();
+});
 app.get("/api/health", (_req, res) =>
-  res.json({ ok: true, mode: "paper", liveExecution: false }),
+  res.json({ ok: true, mode: "paper", liveExecution: false, workerActive: worker.active, hosting: hosting ? 'cloud' : 'local' }),
 );
-app.get("/api/state", async (_req, res) => res.json(await engine.state()));
+app.get("/api/state", async (_req, res) => {
+  const state = await engine.state();
+  res.json(hosting && !res.locals.operator ? publicState(state) : {...state,access:{operator:true}});
+});
 app.get("/api/launches", (_req, res) => res.json(launches.state));
 app.get("/api/monitor", (_req, res) => res.json(monitor.state));
-app.get("/api/evidence/:token", (req, res) => {
+app.get("/api/evidence/:token", async (req, res) => {
   const token = z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(req.params.token).toLowerCase();
   // Read archived observations only: opening an unqualified launch never starts paid queries.
-  res.json({ evidence: evidenceArchive.latest(token, Date.now(), 86400000) ?? null });
+  res.json({ evidence: await evidenceArchive.latest(token, Date.now(), 86400000) ?? null });
 });
 app.post("/api/monitor/control", async (req, res) => {
   const { enabled } = z
@@ -100,11 +120,11 @@ app.post("/api/monitor/control", async (req, res) => {
     .parse(req.body);
   await monitor.setEnabled(enabled);
   if(!enabled) await store.mutate(s=>{s.running=false;});
-  if (enabled) void monitor.tick();
+  if (enabled) void worker.run(()=>monitor.tick());
   res.json(monitor.state);
 });
 app.get("/api/replays", (_req, res) =>
-  res.json({ run: replays.run, questions: REPLAY_QUESTIONS }),
+  res.json({ run: replays.run, questions: REPLAY_QUESTIONS, operator: !hosting || !!res.locals.operator }),
 );
 app.post("/api/replays", (req, res) => {
   z.object({}).strict().parse(req.body);
@@ -115,7 +135,8 @@ app.post("/api/launches/control", async (req, res) => {
     .object({ enabled: z.boolean() })
     .parse(req.body).enabled;
   if(!launches.state.enabled) await store.mutate(s=>{s.running=false;});
-  if (launches.state.enabled) void launches.refresh();
+  if (cloud) await cloud.record('launches').write(JSON.stringify(launches.state));
+  if (launches.state.enabled) void worker.run(()=>launches.refresh());
   res.json({ enabled: launches.state.enabled });
 });
 const launchFor = (token: string) =>
@@ -127,7 +148,7 @@ app.get("/api/launches/:token/candles", async (req, res) => {
   const interval = z.enum(["1", "5", "15"]).parse(req.query.interval || "5");
   try {
     res.json({
-      candles: await launches.candles(launch.address, interval),
+      candles: await publicReads.read(`gmgn:${launch.address}:${interval}`,()=>launches.candles(launch.address, interval)),
       source: "GMGN",
       scope: "Token-wide; not a verified execution-pool price",
     });
@@ -141,7 +162,7 @@ app.get("/api/launches/:token/verification", async (req, res) => {
   const launch = launchFor(req.params.token);
   if (!launch)
     return res.status(404).json({ error: "Token is not in launch discovery" });
-  res.json(await graduations.verify(launch));
+  res.json(await publicReads.read(`verification:${launch.address}`,()=>graduations.verify(launch)));
 });
 app.post("/api/launches/:token/inspect", async (req, res) => {
   const launch = launchFor(req.params.token);
@@ -181,7 +202,7 @@ app.get("/api/candles/:pool", async (req, res) => {
   const interval = z.enum(["1", "5", "15"]).parse(req.query.interval || "5");
   try {
     res.json({
-      candles: await providers.candles(pool, interval),
+      candles: await publicReads.read(`candles:${pool}:${interval}`,()=>providers.candles(pool, interval)),
       source: "GeckoTerminal",
       pool,
       interval,
@@ -221,7 +242,7 @@ app.post("/api/control", async (req, res) => {
     .object({ action: z.enum(["start", "pause", "stop", "reset_stop"]) })
     .parse(req.body);
   await store.mutate(s=>paperControl(s,action,monitor.state.enabled&&launches.state.enabled,randomUUID()));
-  if(action==="start") void monitor.tick();
+  if(action==="start") void worker.run(()=>monitor.tick());
   res.json({ ok: true });
 });
 app.post("/api/evaluate", async (req, res) => {
@@ -274,7 +295,8 @@ app.post("/api/connections/check", async (_req, res) => {
 app.use("/api", (_req, res) =>
   res.status(404).json({ error: "Unknown API route" }),
 );
-if (
+if (hosting) app.use((_req,res)=>res.status(404).json({error:'API only'}));
+else if (
   process.env.NODE_ENV !== "development" &&
   existsSync(resolve("dist/index.html"))
 ) {
@@ -319,16 +341,38 @@ app.use(
     });
   },
 );
-const server = app.listen(port, "127.0.0.1", () =>
+const server = app.listen(port, hosting?.bind ?? "127.0.0.1", () =>
   console.log(`JEV terminal: http://localhost:${port} · PAPER ONLY`),
 );
-void engine.discover();
-void launches.refresh().then(() => monitor.tick());
+let closing=false, starting=false;
+async function startWorker(){
+  if(closing||starting||worker.active||!wantsWorker)return;
+  starting=true;
+  try {
+    if(cloud){
+      if(!await cloud.acquire())return;
+      await store.mutate(s=>{s.running=false;});
+      await monitor.init();await replays.init();
+      const prior=await cloud.record('launches').read();
+      if(prior){const saved=JSON.parse(prior);if(saved.source!=='GMGN'||!Array.isArray(saved.launches))throw new Error('Invalid saved feed');launches.state=saved;}
+      await configureGmgnRuntime(cloud.record('gmgn-cooldown'),()=>worker.assertActive());
+    }
+    worker.enable();
+    void worker.run(()=>engine.discover());
+    void worker.run(async()=>{await launches.refresh();if(cloud)await cloud.record('launches').write(JSON.stringify(launches.state));await monitor.tick();});
+  } catch { console.error('Worker startup unavailable; no session armed'); }
+  finally {starting=false;}
+}
+await startWorker();
+const leaseTimer=setInterval(()=>{
+  if(worker.active&&cloud) void cloud.renew().catch(()=>{worker.active=false;console.error('Worker lease lost; restarting safely');process.exit(1);});
+  else void startWorker();
+},10000);
 const launchTimer = setInterval(
-  () => void launches.refresh().then(() => monitor.tick()),
+  () => void worker.run(async()=>{await launches.refresh();if(cloud)await cloud.record('launches').write(JSON.stringify(launches.state));await monitor.tick();}),
   30000,
 );
-const timer = setInterval(async () => {
+const timer = setInterval(() => void worker.run(async () => {
   try {
     await engine.discover();
     const state = await store.read();
@@ -339,18 +383,21 @@ const timer = setInterval(async () => {
       s.running = false;
     });
   }
-}, 60000);
-const exitTimer = setInterval(()=>void engine.checkExits(),15000);
-const memoryTimer = setInterval(()=>void learning.tick().catch(()=>{}),10000);
+}), 60000);
+const exitTimer = setInterval(()=>void worker.run(()=>engine.checkExits()),15000);
+const memoryTimer = setInterval(()=>void worker.run(()=>learning.tick()),10000);
 for (const signal of ["SIGINT", "SIGTERM"] as const)
   process.on(signal, () => {
+    closing=true;
+    clearInterval(leaseTimer);
     clearInterval(timer);
     clearInterval(exitTimer);
     clearInterval(memoryTimer);
     clearInterval(launchTimer);
-    server.close(() => {
-      evidenceArchive.close();
-      void store.close();
-      process.exit(0);
-    });
+    // On forced termination the DB lease expires naturally; never release while work can still write.
+    server.close(()=>void worker.drain().then(async()=>{
+      await replays.finished();
+      if(cloud)await cloud.release();else (evidenceArchive as EvidenceArchive).close();
+      await store.close();process.exit(0);
+    }).catch(()=>process.exit(1)));
   });

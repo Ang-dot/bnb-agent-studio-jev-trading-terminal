@@ -1,8 +1,12 @@
 # Temporary infrastructure probe. No provider credentials or trading code.
 FROM node:22-bookworm-slim
-ENV NODE_ENV=production PORT=8787
+ENV NODE_ENV=production PORT=8787 HOSTING_MODE=cloud WORKER_ENABLED=false GMGN_CLI_PATH=/usr/local/bin/gmgn-cli
 WORKDIR /app
-COPY --chown=node:node scripts/hosting-preflight.mjs ./scripts/hosting-preflight.mjs
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev --ignore-scripts && npm install --global gmgn-cli@1.6.6 --ignore-scripts && npm cache clean --force
+COPY --chown=node:node server ./server
+COPY --chown=node:node src ./src
+COPY tsconfig.json ./
 USER node
 EXPOSE 8787
-CMD ["node", "scripts/hosting-preflight.mjs"]
+CMD ["node", "--import", "tsx", "server/index.ts"]

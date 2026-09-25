@@ -1,3 +1,4 @@
+import { apiPath } from "./api-path.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -48,7 +49,7 @@ const short = (s: string) => `${s.slice(0, 6)}…${s.slice(-4)}`;
 const time = (n: number) =>
   new Date(n).toLocaleTimeString("en-GB", { hour12: false });
 async function api<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(apiPath(url), {
     headers: body ? { "Content-Type": "application/json" } : undefined,
     method: body ? "POST" : "GET",
     body: body ? JSON.stringify(body) : undefined,

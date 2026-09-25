@@ -1,4 +1,10 @@
 *
-!scripts/
-!scripts/hosting-preflight.mjs
+!package.json
+!package-lock.json
+!tsconfig.json
+!server/
+!server/**
+!src/
+!src/**
 !Dockerfile
+**/*.test.ts

@@ -1,3 +1,4 @@
+import { apiPath } from "./api-path.js";
 import { useEffect, useState } from "react";
 import { Activity, Clock3, Database, Droplets, ExternalLink, Fingerprint, Users } from "lucide-react";
 import type { SupportingEvidence } from "./enrichment.js";
@@ -24,7 +25,7 @@ export function SupportingResearch({token,decision,now,eligible}:{token:string;d
     if(!token)return;
     const c=new AbortController();let busy=false;
     const refresh=async()=>{if(busy)return;busy=true;try{
-      const r=await fetch(`/api/evidence/${token}`,{signal:c.signal,cache:"no-store"});
+      const r=await fetch(apiPath(`/api/evidence/${token}`),{signal:c.signal,cache:"no-store"});
       if(!r.ok)throw new Error();
       const data=await r.json();if(!c.signal.aborted){setLatest(data.evidence?.token===token?data.evidence:null);setFailed(false);}
     }catch{if(!c.signal.aborted)setFailed(true);}finally{busy=false;if(!c.signal.aborted)setLoading(false);}};

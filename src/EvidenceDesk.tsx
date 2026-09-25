@@ -1,3 +1,4 @@
+import { apiPath } from "./api-path.js";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TypeSafeLogo } from "./TypeSafeLogo.js";
 import {
@@ -89,7 +90,7 @@ async function api<T>(
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiPath(path), {
     method: body === undefined ? "GET" : "POST",
     headers:
       body === undefined ? undefined : { "Content-Type": "application/json" },

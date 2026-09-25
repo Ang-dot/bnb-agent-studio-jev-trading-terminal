@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { readFileSync, mkdirSync, writeFileSync, renameSync } from "node:fs";
 import { serialReadLane } from "./read-lane.js";
+import type { JsonPersistence } from './cloud-store.js';
 import { z } from "zod";
 import type { Launch, LaunchFeedState, Platform } from "../src/launches.js";
 import { platforms, platformLabel, stageLabel } from "../src/launches.js";
@@ -185,12 +186,20 @@ const binary =
 let configured: Promise<unknown> | undefined;
 let cooldownUntil = 0;
 const cooldownFile = ".data/gmgn-cooldown.json";
+let cloudCooldown: JsonPersistence | undefined;
+let readGuard: (()=>Promise<void>) | undefined;
+export async function configureGmgnRuntime(record:JsonPersistence,guard:()=>Promise<void>){
+  cloudCooldown=record;readGuard=guard;
+  const raw=await record.read();
+  if(raw!==undefined){const saved=JSON.parse(raw);if(!Number.isFinite(saved.until))throw new Error('Invalid GMGN cooldown');cooldownUntil=Math.max(cooldownUntil,saved.until);}
+}
 try {
   const saved = JSON.parse(readFileSync(cooldownFile, "utf8"));
   if (Number.isFinite(saved.until)) cooldownUntil = Math.max(0, saved.until);
 } catch { /* First run has no cooldown. */ }
 export const gmgnRead = serialReadLane(gmgnReadNow);
 async function gmgnReadNow(args: string[]): Promise<unknown> {
+  if(readGuard)await readGuard();
   if (Date.now() < cooldownUntil) throw new Error("GMGN cooling down");
   configured ??= exec(binary, ["config", "--check"], {
     timeout: 10000,
@@ -212,9 +221,12 @@ async function gmgnReadNow(args: string[]): Promise<unknown> {
     if (/429|RATE_LIMIT/.test(`${error.stderr || ""} ${error.stdout || ""}`)) {
       cooldownUntil = Date.now() + 310_000;
       try {
+        if(cloudCooldown)await cloudCooldown.write(JSON.stringify({until:cooldownUntil}));
+        else {
         mkdirSync(".data", {recursive:true,mode:0o700});
         writeFileSync(cooldownFile+".tmp",JSON.stringify({until:cooldownUntil}),{mode:0o600});
         renameSync(cooldownFile+".tmp",cooldownFile);
+        }
       } catch { /* In-process cooldown still applies if disk is unavailable. */ }
     }
     throw new Error("GMGN read unavailable");

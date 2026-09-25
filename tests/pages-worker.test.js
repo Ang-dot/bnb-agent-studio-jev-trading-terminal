@@ -1,0 +1,31 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import worker from '../public/_worker.js';
+const env={BACKEND_ORIGIN:'https://production-example.tyzo.nodeops.app',ORIGIN_SECRET:'server-secret',ASSETS:{fetch:async()=>new Response('static')}};
+const url='https://jev-trading-terminal.pages.dev';
+afterEach(()=>vi.unstubAllGlobals());
+describe('Pages API boundary',()=>{
+  it('rejects public writes and missing operator assertions without reaching origin',async()=>{
+    const upstream=vi.fn();vi.stubGlobal('fetch',upstream);
+    expect((await worker.fetch(new Request(url+'/api/control',{method:'POST'}),env)).status).toBe(403);
+    expect((await worker.fetch(new Request(url+'/operator/api/state'),env)).status).toBe(403);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+  it('never forwards visitor supplied secret, cookies or access assertions on the public route',async()=>{
+    const upstream=vi.fn(async()=>Response.json({access:{operator:false}}));vi.stubGlobal('fetch',upstream);
+    const response=await worker.fetch(new Request(url+'/api/state',{headers:{'X-Jev-Origin-Secret':'attacker','Cf-Access-Jwt-Assertion':'fake',Cookie:'private'}}),env);
+    expect(response.status).toBe(200);
+    const headers=upstream.mock.calls[0][1].headers;
+    expect(headers.get('x-jev-origin-secret')).toBe(env.ORIGIN_SECRET);
+    expect(headers.get('cf-access-jwt-assertion')).toBeNull();expect(headers.get('cookie')).toBeNull();
+    expect(response.headers.get('x-jev-origin-secret')).toBeNull();
+  });
+  it('forwards operator assertion for backend signature verification and rejects cross-origin writes',async()=>{
+    const upstream=vi.fn(async()=>Response.json({ok:true}));vi.stubGlobal('fetch',upstream);
+    const options={method:'POST',headers:{'Content-Type':'application/json',Origin:url,'Cf-Access-Jwt-Assertion':'backend-must-verify'},body:'{"action":"pause"}'};
+    expect((await worker.fetch(new Request(url+'/operator/api/control',options),env)).status).toBe(200);
+    expect(upstream.mock.calls[0][0].pathname).toBe('/api/control');
+    expect(upstream.mock.calls[0][1].headers.get('cf-access-jwt-assertion')).toBe('backend-must-verify');
+    expect((await worker.fetch(new Request(url+'/operator/api/control',{...options,headers:{...options.headers,Origin:'https://evil.test'}}),env)).status).toBe(403);
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+});

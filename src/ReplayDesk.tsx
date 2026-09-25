@@ -1,3 +1,4 @@
+import { apiPath } from "./api-path.js";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -59,6 +60,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
   const [pointIndex, setPointIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [operator, setOperator] = useState(false);
   const [revealed, setRevealed] = useState(false);
   useEffect(() => setRevealed(false), [coinIndex, pointIndex]);
   useEffect(() => {
@@ -68,7 +70,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
       if (busy) return;
       busy = true;
       try {
-        const response = await fetch("/api/replays", { cache: "no-store" });
+        const response = await fetch(apiPath("/api/replays"), { cache: "no-store" });
         if (!response.ok) throw new Error();
         const data = await response.json();
         if (!disposed) {
@@ -78,6 +80,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
               : data.run,
           );
           setQuestions(data.questions);
+          setOperator(data.operator === true);
           setError("");
         }
       } catch {
@@ -147,7 +150,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
     setPlaying(false);
     setError("");
     try {
-      const response = await fetch("/api/replays", {
+      const response = await fetch(apiPath("/api/replays"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "{}",
@@ -176,7 +179,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
             evidence behind each assessment.
           </p>
         </div>
-        <button
+        {operator && <button
           className="yellow-button"
           disabled={loading || starting || run?.status === "running"}
           onClick={() => void start()}
@@ -187,7 +190,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
             : run
               ? "Run a fresh replay"
               : "Run 3-coin replay"}
-        </button>
+        </button>}
       </header>
       <div className="replay-disclosure">
         <ShieldCheck size={20} />
