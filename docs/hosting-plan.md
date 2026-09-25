@@ -30,6 +30,7 @@ User-approved direction: NodeOps replaces AWS for backend hosting. Singapore is 
 - NodeOps CreateOS CLI v0.0.29 authenticated successfully; account is currently on the free plan.
 - Private GitHub repository created and initial source published. The source passes 175 tests and the production build; a staged-file scan found no configured secret values or credential patterns. Local runtime data and private research outputs were not uploaded.
 - Singapore (`sgp1`) is listed in the provider zone catalog, but the authenticated product catalog currently exposes no `vm-terminal` product. Standard app/runtime settings do not expose region selection. Neither fact establishes that this account can deploy the backend in Singapore.
-- NodeOps reports no connected GitHub installations. Its dashboard requires a separate sign-in to authorize repository access.
-- GitHub app connection, Singapore placement, continuous-execution verification, production adaptation, state migration and deployment remain pending.
+- NodeOps dashboard and CLI authentication are complete. Its GitHub installation is connected; following explicit user approval, access was restricted to `Ang-dot/jev-trading-terminal`. A fresh NodeOps repository query returned exactly that one repository.
+- The authenticated Node.js deployment form was inspected and exposes no region selector. The Services page offers databases, cache and queues, but no general-purpose VM. Singapore backend placement is still unconfirmed; do not deploy to a default region without new user approval.
+- Singapore placement, continuous-execution verification, production adaptation, state migration and deployment remain pending. No provider credentials have been uploaded to NodeOps and no compute resources have been provisioned.
 - No AWS cloud resources were created. AWS CLI authorization is no longer the active deployment path.
