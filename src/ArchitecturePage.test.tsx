@@ -7,7 +7,7 @@ describe('architecture presentation', () => {
   it('starts at the approved Studio spotlight, with honest SDK boundaries and a repository link', () => {
     const html = renderToStaticMarkup(<ArchitecturePage />);
     expect(html).toContain('From new launch to informed action.');
-    expect(html).toContain('href="https://github.com/Ang-dot/jev-trading-terminal"');
+    expect(html).toContain('href="https://github.com/Ang-dot/bnb-agent-studio-jev-trading-terminal"');
     expect(html).toContain('Live signer locked');
     expect(html).toContain('No payment or public inference endpoint.');
     expect(html).toContain('aria-label="Inspect BNB Agent Studio"');

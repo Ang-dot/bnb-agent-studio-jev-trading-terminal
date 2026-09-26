@@ -1,6 +1,6 @@
 import type { Decision } from './types.js';
 
-export const REPOSITORY_URL = 'https://github.com/Ang-dot/jev-trading-terminal';
+export const REPOSITORY_URL = 'https://github.com/Ang-dot/bnb-agent-studio-jev-trading-terminal';
 export const architectureComponents = {
   studio: {name:'BNB Agent Studio', tagline:'From custom logic to a reusable agent service.', role:'Serves the research, memory and JEV assessment as one bounded request.', advantage:'A replaceable work hook, a defined deadline and a consistent delivery boundary.', demo:'Private runtime inside NodeOps. No payment or public inference endpoint.', note:'Authentication and receipts are provided by our application adapter.', step:1},
   sdk: {name:'BNB Agent SDK', tagline:'A chain-native foundation, separate from the model.', role:'Provides BNB Chain context, draft identity metadata and the unsigned intent / executor interface.', advantage:'A shared chain interface separates what the model proposes from what execution code is allowed to do.', demo:'Chain constants and unsigned intents are integrated. No live signer, registered identity or live swap is enabled.', note:'ERC-8004 metadata is a draft, not an on-chain registration. Commerce and payment rails are not activated.', step:1},
