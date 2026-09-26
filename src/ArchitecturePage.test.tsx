@@ -17,6 +17,11 @@ describe('architecture presentation', () => {
     expect(html).not.toContain('Cloudflare');
     expect(html).toContain('Inspect GeckoTerminal API');
     expect(html).toContain('alt="GeckoTerminal"');
+    expect(html).toContain('alt="GMGN"');
+    expect(html).toContain('alt="Grok"');
+    expect(html).toContain('alt="NodeOps"');
+    expect(html).toContain('alt="TiDB"');
+    expect(html).toContain('alt="NodeReal"');
     expect(html).not.toContain('Bitquery');
     expect(html).not.toContain('CoinGecko');
   });

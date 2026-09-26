@@ -1,14 +1,36 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, BarChart3, Box, ChevronLeft, ChevronRight, Database, FileText, Info, LoaderCircle, Play, Search, Server, ShieldCheck, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Info, LoaderCircle, Play, ShieldCheck, X } from 'lucide-react';
 import { TypeSafeLogo } from './TypeSafeLogo.js';
 import bnbLogo from './assets/bnb-chain-symbol-yellow.svg';
 import brainLogo from './assets/living-brain-logo.png';
 import geckoLogo from './assets/geckoterminal-symbol.svg';
+import gmgnLogo from './assets/gmgn-symbol.svg';
+import grokLogo from './assets/grok-symbol.svg';
+import nodeopsLogo from './assets/nodeops-symbol.png';
+import noderealLogo from './assets/nodereal-logo.svg';
+import tidbLogo from './assets/tidb-symbol.svg';
 import { AssessmentReceiptView } from './AssessmentReceipt.js';
 import { architectureComponents as components, architectureReducer, architectureSteps as steps, initialArchitecture, loadLatestReceipt, REPOSITORY_URL, type ArchitectureComponent } from './architecture-model.js';
 import type { Decision } from './types.js';
 import './style.css';
 import './architecture.css';
+
+const brandMarks = {
+  gmgn: {src: gmgnLogo, alt: 'GMGN'},
+  grok: {src: grokLogo, alt: 'Grok'},
+  geckoterminal: {src: geckoLogo, alt: 'GeckoTerminal'},
+  nodeops: {src: nodeopsLogo, alt: 'NodeOps'},
+  tidb: {src: tidbLogo, alt: 'TiDB'},
+  nodereal: {src: noderealLogo, alt: 'NodeReal'},
+} as const;
+type BrandMarkId = keyof typeof brandMarks;
+
+function BrandMark({id, decorative=false}:{id:BrandMarkId; decorative?:boolean}) {
+  const mark = brandMarks[id];
+  const alt = decorative ? '' : mark.alt;
+  if (id==='nodereal') return <span className="arch-nodereal-mark"><img src={mark.src} alt={alt}/></span>;
+  return <img className="arch-brand-mark" src={mark.src} alt={alt} width={28} height={28}/>;
+}
 
 function RecordedReceipt({close}:{close:()=>void}) {
   const dialog=useRef<HTMLDialogElement>(null);
@@ -64,7 +86,7 @@ export function ArchitecturePage() {
       <div className="arch-workspace">
         <section id="architecture-map" className="arch-map" aria-labelledby="arch-map-title"><header><h2 id="arch-map-title">Explore the engine</h2><span>Select any component</span></header>
           <div className="arch-diagram" data-step={state.step}>
-            <section className="arch-inputs" aria-label="Market evidence"><h3>MARKET EVIDENCE</h3>{(['gmgn','grok','geckoterminal'] as const).map(id=><button key={id} className={`arch-source${nodeClass(id)}`} onClick={()=>select(id)} aria-pressed={state.component===id} aria-label={`Inspect ${components[id].name}`}><span className="arch-function-icon">{id==='gmgn'?<BarChart3 size={24}/>:id==='grok'?<Search size={24}/>:<img src={geckoLogo} alt="GeckoTerminal" width={28} height={28}/>}</span><span><strong>{components[id].name}</strong><small>{id==='gmgn'?<>Flap + Four.meme discovery<br/>Creator, holders, flow &amp; depth</>:id==='grok'?'Contract-matched social research':'Timestamped same-pool prices'}</small></span></button>)}</section>
+            <section className="arch-inputs" aria-label="Market evidence"><h3>MARKET EVIDENCE</h3>{(['gmgn','grok','geckoterminal'] as const).map(id=><button key={id} className={`arch-source${nodeClass(id)}`} onClick={()=>select(id)} aria-pressed={state.component===id} aria-label={`Inspect ${components[id].name}`}><span className="arch-function-icon"><BrandMark id={id}/></span><span><strong>{components[id].name}</strong><small>{id==='gmgn'?<>Flap + Four.meme discovery<br/>Creator, holders, flow &amp; depth</>:id==='grok'?'Contract-matched social research':'Timestamped same-pool prices'}</small></span></button>)}</section>
             <div className={`arch-evidence-bridge arch-connection${state.step===0?' is-active':''}`} aria-hidden="true"><span>Fresh<br/>evidence</span><i/><ArrowRight size={22}/></div>
             <section className={`arch-engine${state.component==='studio'||state.component==='sdk'?' is-selected':''}`} aria-label="Core engine">
               <button className={`arch-studio${nodeClass('studio')}`} onClick={()=>select('studio')} aria-label="Inspect BNB Agent Studio" aria-pressed={state.component==='studio'}><span className="arch-core-label"><span>CORE ENGINE</span><small>Runtime integrated</small></span><strong>BNB Agent Studio</strong><span>Private assessment service</span><span>Work dispatch · deadline · delivery</span></button>
@@ -82,7 +104,7 @@ export function ArchitecturePage() {
           </div>
           <p className="arch-map-caption">“JEV proposes. Code gates execution. Memory preserves experience.”</p>
         </section>
-        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{state.component==='geckoterminal'&&<img className="arch-spotlight-logo" src={geckoLogo} alt=""/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
+        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{(state.component==='gmgn'||state.component==='grok'||state.component==='geckoterminal'||state.component==='nodeops'||state.component==='tidb'||state.component==='nodereal')&&<BrandMark id={state.component} decorative/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
           {state.component==='studio'&&<section className="arch-sdk-summary"><h3>SDK foundation</h3><p>Chain context and unsigned intents keep model judgment separate from execution.</p></section>}
           <p className="arch-component-note"><Info size={19}/><span>{spotlight.note}</span></p></div>
           {state.component==='geckoterminal'&&<p className="arch-data-attribution"><a href="https://www.geckoterminal.com" target="_blank" rel="noopener noreferrer">On-chain data provided by GeckoTerminal <ArrowUpRight size={14}/></a></p>}
@@ -91,7 +113,7 @@ export function ArchitecturePage() {
         </aside>
       </div>
     </main>
-    <footer className="arch-infrastructure"><h2>SUPPORTING INFRASTRUCTURE</h2>{(['nodeops','tidb','nodereal'] as const).map(id=><button key={id} onClick={()=>select(id)} aria-label={`Inspect ${components[id].name}`} aria-pressed={state.component===id} className={nodeClass(id)}>{id==='nodeops'?<Server size={29}/>:id==='tidb'?<Database size={29}/>:<Box size={29}/>}<span><strong>{components[id].name}</strong><small>{id==='nodeops'?'Hosts the always-on worker':id==='tidb'?'Durable ledger, evidence and outcomes':'On-demand read-only chain checks'}</small></span></button>)}<p>Explore a component, or present the decision journey.</p></footer>
+    <footer className="arch-infrastructure"><h2>SUPPORTING INFRASTRUCTURE</h2>{(['nodeops','tidb','nodereal'] as const).map(id=><button key={id} onClick={()=>select(id)} aria-label={`Inspect ${components[id].name}`} aria-pressed={state.component===id} className={nodeClass(id)}><BrandMark id={id}/><span><strong>{components[id].name}</strong><small>{id==='nodeops'?'Hosts the always-on worker':id==='tidb'?'Durable ledger, evidence and outcomes':'On-demand read-only chain checks'}</small></span></button>)}<p>Explore a component, or present the decision journey.</p></footer>
     {receiptOpen&&<RecordedReceipt close={()=>setReceiptOpen(false)}/>}
   </div>;
 }
