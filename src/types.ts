@@ -45,7 +45,11 @@ export interface Snapshot {
   sellCount: number;
   observedAt: number;
   marketAt: number;
-  source: "bitquery" | "geckoterminal";
+  source: "bitquery" | "geckoterminal" | "coingecko";
+  tradeEvidence?: {
+    kind:'pool-trade';network:'bsc';pool:string;token:string;
+    txHash:string;blockNumber:number;requestedAt:number;receivedAt:number;
+  };
   // Optional for backward compatibility with already-recorded snapshots.
   metricsSource?: 'GMGN' | 'GeckoTerminal';
   metricsScope?: 'token' | 'pool';

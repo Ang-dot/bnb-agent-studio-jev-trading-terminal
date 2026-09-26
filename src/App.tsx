@@ -183,7 +183,7 @@ export function App() {
     : 0;
   const ready = state?.providers
     .filter((p) =>
-      ["Jev", "Living Brain", "Bitquery", "Grok / X"].includes(p.name),
+      ["Jev", "Living Brain", "Bitquery", "GeckoTerminal", "Grok / X"].includes(p.name),
     )
     .every((p) => p.state === "ready" || p.state === "configured");
   return (
@@ -624,7 +624,7 @@ export function App() {
                 </h4>
                 <p id="evidence-market">
                   {decision?.snapshot
-                    ? `${price(decision.snapshot.priceUsd)} · ${decision.snapshot.source} · ${time(decision.snapshot.marketAt)}`
+                    ? `${price(decision.snapshot.priceUsd)} · ${marketSources(decision.snapshot).price} · ${time(decision.snapshot.marketAt)}`
                     : pool
                       ? `${pool.name} · exact pool selected`
                       : "Choose a pool to inspect."}

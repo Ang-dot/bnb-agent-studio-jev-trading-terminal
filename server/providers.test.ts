@@ -8,6 +8,20 @@ import type { Snapshot, XResearch } from "../src/types.js";
 import { normalizeEvidence } from './enrichment.js';
 import { researchInput } from './research-input.js';
 describe("provider boundary", () => {
+  it('uses authenticated CoinGecko pool trades when configured, without falling back to exhausted Bitquery',async()=>{
+    const token='0x'+'a'.repeat(40),pool='0x'+'b'.repeat(40),quote='0x'+'c'.repeat(40),now=Date.now();
+    const market:any={address:pool,token,name:'Test',discoveredAt:now-1000,marketData:{source:'GMGN',metricsScope:'token',receivedAt:now}};
+    let saved:string|undefined;
+    const fetchImpl=vi.fn<typeof fetch>(async()=>Response.json({data:[{type:'trade',attributes:{from_token_address:quote,to_token_address:token,
+      price_from_in_usd:'600',price_to_in_usd:'.02',block_timestamp:new Date(now-5000).toISOString(),block_number:100,tx_hash:'0x'+'d'.repeat(64)}}]}));
+    const providers=new Providers({MARKET_PRICE_PROVIDER:'coingecko',COINGECKO_DEMO_API_KEY:'fixture',BITQUERY_CLIENT_ID:'old',BITQUERY_CLIENT_SECRET:'old'},fetchImpl);
+    providers.usePriceBudget({read:async()=>saved,write:async(v:string)=>{saved=v;}});
+    expect(providers.priceProvider).toBe('GeckoTerminal');
+    expect(providers.statuses.has('Bitquery')).toBe(false);
+    expect(await providers.snapshot(market)).toMatchObject({source:'coingecko',marketAt:now-5000,priceUsd:.02,metricsSource:'GMGN',
+      tradeEvidence:{kind:'pool-trade',pool,token,network:'bsc',blockNumber:100}});
+    expect(fetchImpl).toHaveBeenCalledTimes(1);expect(String(fetchImpl.mock.calls[0][0])).toContain('api.coingecko.com');
+  });
   it('writes an idempotent episode and polls only its source ids without leaking auth into payloads',async()=>{
     const calls:{url:string;init?:RequestInit}[]=[];
     const provider=new Providers({LIVING_BRAIN_API_KEY:'fixture-secret',LIVING_BRAIN_SUBJECT_ID:'subject',LIVING_BRAIN_ID:'brain'},async(url,init)=>{

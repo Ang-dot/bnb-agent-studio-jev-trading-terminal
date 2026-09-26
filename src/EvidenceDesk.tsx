@@ -1495,7 +1495,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                 ))}
               </div>
               <p>
-                Other existing entry gates remain: fresh Bitquery market data,
+                Other existing entry gates remain: fresh matching-pool trade data,
                 cited matching X evidence, Living Brain
                 availability and JEV thresholds. These simulation defaults are
                 not approved live-trading limits.

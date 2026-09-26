@@ -3,6 +3,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, BarChart3, Box
 import { TypeSafeLogo } from './TypeSafeLogo.js';
 import bnbLogo from './assets/bnb-chain-symbol-yellow.svg';
 import brainLogo from './assets/living-brain-logo.png';
+import geckoLogo from './assets/geckoterminal-symbol.svg';
 import { AssessmentReceiptView } from './AssessmentReceipt.js';
 import { architectureComponents as components, architectureReducer, architectureSteps as steps, initialArchitecture, loadLatestReceipt, REPOSITORY_URL, type ArchitectureComponent } from './architecture-model.js';
 import type { Decision } from './types.js';
@@ -63,7 +64,7 @@ export function ArchitecturePage() {
       <div className="arch-workspace">
         <section id="architecture-map" className="arch-map" aria-labelledby="arch-map-title"><header><h2 id="arch-map-title">Explore the engine</h2><span>Select any component</span></header>
           <div className="arch-diagram" data-step={state.step}>
-            <section className="arch-inputs" aria-label="Market evidence"><h3>MARKET EVIDENCE</h3>{(['gmgn','grok','bitquery'] as const).map(id=><button key={id} className={`arch-source${nodeClass(id)}`} onClick={()=>select(id)} aria-pressed={state.component===id} aria-label={`Inspect ${components[id].name}`}><span className="arch-function-icon">{id==='gmgn'?<BarChart3 size={24}/>:id==='grok'?<Search size={24}/>:<Database size={24}/>}</span><span><strong>{components[id].name}</strong><small>{id==='gmgn'?<>Flap + Four.meme discovery<br/>Creator, holders, flow &amp; depth</>:id==='grok'?'Contract-matched social research':'Timestamped same-pool prices'}</small></span></button>)}</section>
+            <section className="arch-inputs" aria-label="Market evidence"><h3>MARKET EVIDENCE</h3>{(['gmgn','grok','geckoterminal'] as const).map(id=><button key={id} className={`arch-source${nodeClass(id)}`} onClick={()=>select(id)} aria-pressed={state.component===id} aria-label={`Inspect ${components[id].name}`}><span className="arch-function-icon">{id==='gmgn'?<BarChart3 size={24}/>:id==='grok'?<Search size={24}/>:<img src={geckoLogo} alt="GeckoTerminal" width={28} height={28}/>}</span><span><strong>{components[id].name}</strong><small>{id==='gmgn'?<>Flap + Four.meme discovery<br/>Creator, holders, flow &amp; depth</>:id==='grok'?'Contract-matched social research':'Timestamped same-pool prices'}</small></span></button>)}</section>
             <div className={`arch-evidence-bridge arch-connection${state.step===0?' is-active':''}`} aria-hidden="true"><span>Fresh<br/>evidence</span><i/><ArrowRight size={22}/></div>
             <section className={`arch-engine${state.component==='studio'||state.component==='sdk'?' is-selected':''}`} aria-label="Core engine">
               <button className={`arch-studio${nodeClass('studio')}`} onClick={()=>select('studio')} aria-label="Inspect BNB Agent Studio" aria-pressed={state.component==='studio'}><span className="arch-core-label"><span>CORE ENGINE</span><small>Runtime integrated</small></span><strong>BNB Agent Studio</strong><span>Private assessment service</span><span>Work dispatch · deadline · delivery</span></button>
@@ -81,9 +82,10 @@ export function ArchitecturePage() {
           </div>
           <p className="arch-map-caption">“JEV proposes. Code gates execution. Memory preserves experience.”</p>
         </section>
-        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
+        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{state.component==='geckoterminal'&&<img className="arch-spotlight-logo" src={geckoLogo} alt=""/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
           {state.component==='studio'&&<section className="arch-sdk-summary"><h3>SDK foundation</h3><p>Chain context and unsigned intents keep model judgment separate from execution.</p></section>}
           <p className="arch-component-note"><Info size={19}/><span>{spotlight.note}</span></p></div>
+          {state.component==='geckoterminal'&&<p className="arch-data-attribution"><a href="https://www.geckoterminal.com" target="_blank" rel="noopener noreferrer">On-chain data provided by GeckoTerminal <ArrowUpRight size={14}/></a></p>}
           <button ref={receiptButton} className="arch-receipt-link" onClick={()=>setReceiptOpen(true)}><FileText size={19}/> View assessment receipt <ArrowRight size={17}/></button>
           <div className="arch-pager"><button aria-label="Previous journey step" disabled={state.step===0} onClick={()=>dispatch({type:'previous'})}><ChevronLeft size={20}/></button><span>{state.step+1} of {steps.length}</span><button aria-label="Next journey step" disabled={state.step===3} onClick={()=>dispatch({type:'next'})}><ChevronRight size={20}/></button></div>
         </aside>

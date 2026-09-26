@@ -15,6 +15,10 @@ describe('architecture presentation', () => {
     expect(html).not.toMatch(/alt="BNB Agent (Studio|SDK)"/);
     expect(html).not.toContain('OpenRouter');
     expect(html).not.toContain('Cloudflare');
+    expect(html).toContain('Inspect GeckoTerminal API');
+    expect(html).toContain('alt="GeckoTerminal"');
+    expect(html).not.toContain('Bitquery');
+    expect(html).not.toContain('CoinGecko');
   });
   it('moves a presenter through the journey without wrapping or affecting trading', () => {
     let state = architectureReducer(initialArchitecture, {type:'present'});

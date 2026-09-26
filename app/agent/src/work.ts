@@ -7,6 +7,7 @@ import type { Store } from '../../../server/store.js';
 import type { MemoryLoop } from '../../../server/memory-loop.js';
 import { researchInput } from '../../../server/research-input.js';
 import { netExitUnit } from '../../../server/policy.js';
+import { CoinGeckoError } from '../../../server/coingecko.js';
 import type { AssessmentGuard, AssessmentJob, AssessmentResult } from './assessment.js';
 
 export interface WorkResult extends AssessmentResult {
@@ -47,7 +48,7 @@ export function createAssessmentWork(deps: {
     };
     try {
       await guard.assertActive();
-      const missing = ['Bitquery', 'Jev', 'Living Brain', 'Grok / X'].filter(name => providers.statuses.get(name)?.state === 'missing');
+      const missing = [providers.priceProvider, 'Jev', 'Living Brain', 'Grok / X'].filter(name => providers.statuses.get(name)?.state === 'missing');
       if (missing.length) {
         decision.reasons = [`Connect ${missing.join(', ')} to run Jev + memory. No model call or paper fill was made.`];
         return finish('skipped');
@@ -59,7 +60,7 @@ export function createAssessmentWork(deps: {
         return finish('skipped');
       }
       const fresh = await run('GMGN market pool', () => providers.pool(pool.address, pool.token));
-      decision.snapshot = await run('Bitquery', () => providers.snapshot(fresh));
+      decision.snapshot = await run(providers.priceProvider, () => providers.snapshot(fresh));
       if (decision.snapshot.pool.toLowerCase() !== pool.address.toLowerCase() || decision.snapshot.token.toLowerCase() !== pool.token.toLowerCase())
         throw new Error('Snapshot identity mismatch');
       const state = await store.read();
@@ -95,7 +96,7 @@ export function createAssessmentWork(deps: {
       decision.time = Date.now();
       return finish('completed');
     } catch (error) {
-      decision.reasons = [error instanceof Error && error.message === 'Monitoring paused or evidence expired before JEV; no new model call.'
+      decision.reasons = [error instanceof CoinGeckoError ? error.message : error instanceof Error && error.message === 'Monitoring paused or evidence expired before JEV; no new model call.'
         ? error.message : `${stage} request or response validation failed. No fill; retry after fresh evidence arrives.`];
       return finish('skipped');
     }

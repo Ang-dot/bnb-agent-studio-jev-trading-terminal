@@ -8,8 +8,17 @@ export const emptyLedger = (): Ledger => ({
   cashUsd: 2000, initialCashUsd: 2000, positions: [], fills: [], consumedDecisions: [], realizedPnlUsd: 0, dailyLoss: {},
 });
 export function marketExecutable(s: Snapshot, now: number) {
-  return s.source === "bitquery" && Number.isFinite(s.priceUsd) && s.priceUsd > 0 &&
-    [s.marketAt, s.observedAt].every(t => Number.isFinite(t) && t <= now && now - t <= PAPER_POLICY.maxAgeMs);
+  if (!Number.isFinite(now) || !Number.isFinite(s.priceUsd) || s.priceUsd <= 0 ||
+    ![s.marketAt, s.observedAt].every(t => Number.isFinite(t) && t > 0 && t <= now && now - t <= PAPER_POLICY.maxAgeMs)) return false;
+  if (s.source === 'bitquery') return true; // Preserve historical primary-trade records.
+  const e = s.tradeEvidence;
+  return s.source === 'coingecko' && !!e && e.kind === 'pool-trade' && e.network === 'bsc' &&
+    /^0x[0-9a-f]{40}$/i.test(e.pool) && /^0x[0-9a-f]{40}$/i.test(e.token) &&
+    e.pool.toLowerCase() === s.pool.toLowerCase() && e.token.toLowerCase() === s.token.toLowerCase() &&
+    e.pool.toLowerCase() !== e.token.toLowerCase() && /^0x[0-9a-f]{64}$/i.test(e.txHash) &&
+    Number.isSafeInteger(e.blockNumber) && e.blockNumber > 0 &&
+    [e.requestedAt, e.receivedAt].every(t => Number.isFinite(t) && t > 0 && t <= now && now-t <= PAPER_POLICY.maxAgeMs) &&
+    e.requestedAt <= e.receivedAt && s.marketAt <= e.receivedAt;
 }
 export function buyAmount(ledger: Ledger, s: Snapshot) {
   const tokenCost = ledger.positions.filter(p => p.token.toLowerCase() === s.token.toLowerCase()).reduce((n,p)=>n+p.costUsd,0);
@@ -27,7 +36,7 @@ export function evaluatePolicy(c: PolicyContext): {action: Action; mode:"paper";
   const check=(label:string,pass:boolean,detail:string):Check=>({label,pass,detail});
   const checks = [
     check("Kill switch",!c.halted,"No execution while the stop is latched."),
-    check("Fresh primary price",marketExecutable(s,c.now),"Fresh Bitquery price required, within 90 seconds and never in the future."),
+    check("Fresh primary price",marketExecutable(s,c.now),"Fresh matching-pool trade required, within 90 seconds and never in the future."),
     check("Jev response",["buy","sell","hold"].includes(j.action) && [j.confidence,j.quality,j.toxic,...Object.values(j.probabilities)].every(Number.isFinite) &&
       j.confidence>=0 && j.confidence<=1 && j.quality>=0 && j.quality<=3 && j.toxic>=0 && j.toxic<=1,"Typed model outputs must be valid."),
   ];

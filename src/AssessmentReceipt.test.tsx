@@ -8,6 +8,15 @@ const decision:Decision = {id:'decision',time:5000,pool:'0x'+'1'.repeat(40),name
     stages:[{name:'JEV',startedAt:4500,durationMs:500,status:'completed'}]},
 };
 describe('Studio assessment receipt',()=>{
+  it('credits GeckoTerminal on new pool-trade evidence without relabeling historical Bitquery',()=>{
+    const snapshot={source:'coingecko',marketAt:4000,observedAt:4500,metricsSource:'GMGN'} as any;
+    const html=renderToStaticMarkup(<AssessmentReceiptView decision={{...decision,snapshot}}/>);
+    expect(html).toContain('GeckoTerminal · pool trade');
+    expect(html).toContain('href="https://www.geckoterminal.com"');
+    expect(html).not.toContain('CoinGecko');
+    const old=renderToStaticMarkup(<AssessmentReceiptView decision={{...decision,snapshot:{...snapshot,source:'bitquery'}}}/>);
+    expect(old).toContain('Bitquery · pool trade');expect(old).not.toContain('On-chain data provided by');
+  });
   it('separates JEV API latency, pipeline time and memory write status',()=>{
     const html=renderToStaticMarkup(<AssessmentReceiptView decision={decision} />);
     expect(html).toContain('BNB Agent Studio');expect(html).toContain('request-123');

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluatePolicy, applyPaperFill, emptyLedger, PAPER_POLICY } from "./policy.js";
+import { evaluatePolicy, applyPaperFill, emptyLedger, PAPER_POLICY, marketExecutable } from "./policy.js";
 import type { Snapshot, Judgment, XResearch } from "../src/types.js";
 const now = Date.parse("2026-09-25T10:00:00Z");
 const snapshot: Snapshot = {
@@ -44,6 +44,19 @@ const context = {
   } satisfies XResearch,
 };
 describe("paper execution policy", () => {
+  it("accepts fresh authenticated GeckoTerminal trades only with matching, causal evidence", () => {
+    const s: Snapshot = {...snapshot,source:'coingecko',tradeEvidence:{kind:'pool-trade',network:'bsc',pool:snapshot.pool,token:snapshot.token,txHash:'0x'+'a'.repeat(64),blockNumber:100,requestedAt:now-500,receivedAt:now}};
+    expect(marketExecutable(s,now)).toBe(true);
+    expect(evaluatePolicy({...context,snapshot:s}).action).toBe('buy');
+    for(const patch of [{pool:snapshot.token},{token:snapshot.pool},{txHash:'bad'},{blockNumber:0},{requestedAt:now+1},{receivedAt:now+1},{receivedAt:now-2000}])
+      expect(marketExecutable({...s,tradeEvidence:{...s.tradeEvidence!,...patch}},now)).toBe(false);
+    expect(marketExecutable({...s,tradeEvidence:undefined},now)).toBe(false);
+    expect(marketExecutable({...s,marketAt:now-90001},now)).toBe(false);
+    expect(marketExecutable({...s,marketAt:now+1},now)).toBe(false);
+    // Repeated cache reads cannot reset a trade's age, nor upgrade an old indicative source.
+    expect(marketExecutable(s,now+90001)).toBe(false);
+    expect(marketExecutable({...s,source:'geckoterminal'},now)).toBe(false);
+  });
   it("uses six small positions and an aggregate cost budget", () => {
     expect(PAPER_POLICY).toMatchObject({orderUsd:50,maxPositionUsd:150,maxPositions:6,maxExposureUsd:600,minLiquidityUsd:20000});
     const first = applyPaperFill(emptyLedger(), snapshot, "buy", "starter", now);

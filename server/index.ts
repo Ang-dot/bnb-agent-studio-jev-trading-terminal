@@ -367,6 +367,7 @@ async function startWorker(){
       const prior=await cloud.record('launches').read();
       if(prior){const saved=JSON.parse(prior);if(saved.source!=='GMGN'||!Array.isArray(saved.launches))throw new Error('Invalid saved feed');launches.state=saved;}
       await configureGmgnRuntime(cloud.record('gmgn-cooldown'),()=>worker.assertActive());
+      providers.usePriceBudget(cloud.record('coingecko-usage'));
     }
     worker.enable();
     void worker.run(()=>engine.discover());
