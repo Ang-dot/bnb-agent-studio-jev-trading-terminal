@@ -17,7 +17,7 @@ export const liveBlockers = [
   "Live signer is not configured or authorized.",
   "Live capital, position, loss and slippage limits are not approved.",
   "PancakeSwap quote/simulation and transaction reconciliation are not implemented in this first slice.",
-  "TiDB and production deployment have not been validated; provider smoke checks are not a live-trading readiness guarantee.",
+  "Supabase and production deployment have not been validated; provider smoke checks are not a live-trading readiness guarantee.",
 ];
 export class Engine {
   pools: Pool[] = [];

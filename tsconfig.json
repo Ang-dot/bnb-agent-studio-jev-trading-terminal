@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "server", "app/agent/src", "vite.config.ts"]
+  "include": ["src", "server", "scripts/*.ts", "app/agent/src", "vite.config.ts"]
 }

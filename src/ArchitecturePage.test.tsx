@@ -22,7 +22,7 @@ describe('architecture presentation', () => {
     expect(html).toContain('alt="GMGN"');
     expect(html).toContain('alt="Grok"');
     expect(html).toContain('alt="NodeOps"');
-    expect(html).toContain('alt="TiDB"');
+    expect(html).toContain('aria-label="Supabase"');
     expect(html).toContain('alt="NodeReal"');
     expect(html).not.toContain('Bitquery');
     expect(html).not.toContain('CoinGecko');

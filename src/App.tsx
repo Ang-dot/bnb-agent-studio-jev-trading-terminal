@@ -1011,7 +1011,7 @@ export function App() {
                 <div className="modal-note">
                   <Database size={16} />
                   <span>
-                    Ledger: {state?.database}. TiDB requires its SQL connection.
+                    Ledger: {state?.database}. Cloud storage requires its SQL connection.
                     Grok/X uses the same OpenRouter key as Jev. Live signing
                     remains locked.
                   </span>

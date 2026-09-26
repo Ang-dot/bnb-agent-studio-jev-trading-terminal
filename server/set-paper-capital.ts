@@ -1,12 +1,15 @@
 import { writeFile, mkdir } from "node:fs/promises";
-import { SqliteStore, TiDBStore } from "./store.js";
+import { SqliteStore } from "./store.js";
+import { CloudStore } from './cloud-store.js';
 import { setEmptyPaperCapital } from "./capital.js";
 
 if (process.argv[2] !== "--confirm-empty-ledger-2000")
   throw new Error("Explicit empty-ledger $2,000 adjustment confirmation required");
-const store = process.env.TIDB_DATABASE_URL
-  ? await new TiDBStore(process.env.TIDB_DATABASE_URL).init() : new SqliteStore();
+const cloud = process.env.SUPABASE_DATABASE_URL
+  ? await new CloudStore(process.env.SUPABASE_DATABASE_URL).init() : null;
+const store = cloud ?? new SqliteStore();
 try {
+  if (cloud && !await cloud.acquire()) throw new Error('Another worker owns the cloud lease');
   const before = await store.read();
   setEmptyPaperCapital(structuredClone(before), 2000); // Validate before any write.
   await mkdir(".data/capital-backups", { recursive: true, mode: 0o700 });
@@ -16,4 +19,4 @@ try {
   console.log(JSON.stringify({ cashUsd: after.ledger.cashUsd, initialCashUsd: after.ledger.initialCashUsd,
     decisionsPreserved: after.decisions.length, fills: after.ledger.fills.length,
     positions: after.ledger.positions.length, running: after.running, backup }));
-} finally { await store.close(); }
+} finally { if (cloud) await cloud.release(); await store.close(); }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { claimLease, ownsLease, encodeState, decodeState } from './cloud-store.js';
 import { initialState } from './store.js';
-it('losslessly stores large journals below TiDB entry size and reads legacy JSON',()=>{
+it('losslessly stores large journals and reads legacy JSON',()=>{
   const state=initialState();
   const large={...state,metadata:'realistic repeated provider evidence '.repeat(220000)};
   const encoded=encodeState(large);

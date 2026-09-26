@@ -2,7 +2,7 @@ import express from "express";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { z } from "zod";
-import { SqliteStore, TiDBStore } from "./store.js";
+import { SqliteStore } from "./store.js";
 import { Providers } from "./providers.js";
 import { Engine, liveBlockers } from "./engine.js";
 import { inspectChain, LockedLiveExecutor } from "./bnb.js";
@@ -28,12 +28,10 @@ const port = z.coerce
   .max(65535)
   .parse(process.env.PORT || 8787);
 const hosting = hostedSettings(process.env);
-const cloud = hosting ? await new CloudStore(process.env.TIDB_DATABASE_URL!).init().catch(()=>{throw new Error('Cloud storage unavailable');}) : null;
-const store = cloud ?? (process.env.TIDB_DATABASE_URL
-  ? await new TiDBStore(process.env.TIDB_DATABASE_URL).init()
-  : new SqliteStore());
+const cloud = process.env.SUPABASE_DATABASE_URL ? await new CloudStore(process.env.SUPABASE_DATABASE_URL).init().catch(()=>{throw new Error('Cloud storage unavailable');}) : null;
+const store = cloud ?? new SqliteStore();
 const worker = new WorkerRuntime(cloud ? ()=>cloud.assertLease() : undefined);
-const wantsWorker = !hosting || process.env.WORKER_ENABLED === 'true';
+const wantsWorker = !cloud || process.env.WORKER_ENABLED === 'true';
 const publicReads = new SharedReadCache();
 // Always boot paused; deployment/restart is never authorization to resume trading.
 if (!cloud) await store.mutate((s) => {
