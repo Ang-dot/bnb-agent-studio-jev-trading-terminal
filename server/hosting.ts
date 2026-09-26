@@ -5,7 +5,7 @@ import type { TerminalState } from '../src/types.js';
 
 export function hostedSettings(env: NodeJS.ProcessEnv) {
   if (env.HOSTING_MODE !== 'cloud') return null;
-  if (!env.TIDB_DATABASE_URL || (env.ORIGIN_SECRET?.length ?? 0) < 32) throw new Error('Cloud requires durable storage and an origin secret');
+  if (!env.SUPABASE_DATABASE_URL || (env.ORIGIN_SECRET?.length ?? 0) < 32) throw new Error('Cloud requires durable storage and an origin secret');
   const origin = new URL(env.PUBLIC_ORIGIN || '');
   if (origin.protocol !== 'https:' || origin.origin !== env.PUBLIC_ORIGIN) throw new Error('Exact HTTPS frontend origin required');
   const issuer = env.CF_ACCESS_ISSUER;

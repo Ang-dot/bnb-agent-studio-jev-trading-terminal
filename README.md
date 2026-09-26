@@ -4,9 +4,9 @@ Repository for the BNB Chain paper-trading demo. The terminal follows Flap and F
 
 ## Current deployment status
 
-The application runs locally. Cloud deployment is not complete. The approved target is Cloudflare Pages for the public terminal, NodeOps for the always-on backend in Singapore, TiDB for durable state, and Living Brain for semantic memory. See [the hosting plan](docs/hosting-plan.md) for migration and release gates.
+The application runs locally. The cloud target is Cloudflare Pages for the public terminal, NodeOps for the backend, Supabase Postgres for durable state, and Living Brain for semantic memory. See [the hosting plan](docs/hosting-plan.md) for rollout and release gates.
 
-The backend currently enforces localhost access and boots paused. Do not expose this development server directly to the internet. Public API filtering, operator authentication, complete durable-state migration and single-worker ownership are release requirements.
+The backend boots paper execution paused. Do not expose the development server directly to the internet. Public API filtering, operator authentication and single-worker ownership are release requirements. This Supabase cutover starts with a new empty ledger; TiDB history is not imported.
 
 Real-money execution remains locked. No wallet signing key is required for this release.
 
@@ -21,7 +21,7 @@ npm run build
 npm start
 ```
 
-The local terminal is served at `http://localhost:8787/`. Provider credentials belong in a local, ignored `.env.local` file or the deployment platform's protected runtime configuration. Never commit or upload that file with the source.
+The local terminal is served at `http://localhost:8787/`. Provider credentials belong in a local, ignored `.env.local` file or the deployment platform's protected runtime configuration. Set `SUPABASE_DATABASE_URL` and a Supabase root certificate for cloud storage. Never commit or upload credential files with the source.
 
 ## Repository boundaries
 

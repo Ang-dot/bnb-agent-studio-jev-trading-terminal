@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { CloudStore } from '../server/cloud-store.js';
 const source=process.argv[2];
-if(!source || !process.argv.includes('--apply') || !process.env.TIDB_DATABASE_URL || process.env.WORKER_ENABLED!=='false') throw new Error('Explicit source, --apply and disabled cloud worker required');
+if(!source || !process.argv.includes('--apply') || !process.env.SUPABASE_DATABASE_URL || process.env.WORKER_ENABLED!=='false') throw new Error('Explicit source, --apply and disabled cloud worker required');
 let reachable=false;
 try {await fetch('http://127.0.0.1:8787/api/health',{signal:AbortSignal.timeout(1000)});reachable=true;}catch{}
 if(reachable)throw new Error('Stop the laptop worker before migration');
@@ -20,7 +20,7 @@ const records=['monitor','replay','gmgn-cooldown'].filter(n=>existsSync(join(dir
 for(const r of records)JSON.parse(r.data);
 const savedLaunch=process.argv.find(a=>a.startsWith('--launches='))?.slice(11);
 if(savedLaunch){const data=readFileSync(savedLaunch,'utf8');const f=JSON.parse(data);if(f.source!=='GMGN'||!Array.isArray(f.launches))throw new Error('Invalid launch snapshot');records.push({name:'launches',data});}
-const cloud=await new CloudStore(process.env.TIDB_DATABASE_URL).init();
+const cloud=await new CloudStore(process.env.SUPABASE_DATABASE_URL).init();
 let timer:NodeJS.Timeout|undefined,phase='acquire';
 try {
   if(!await cloud.acquire())throw new Error('Another worker owns the cloud lease');

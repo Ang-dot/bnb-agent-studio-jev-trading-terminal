@@ -1,7 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import mysql from "mysql2/promise";
 import type { AgentState } from "../src/types.js";
 import { emptyLedger } from "./policy.js";
 export const initialState = (): AgentState => ({
@@ -60,58 +59,5 @@ export class SqliteStore implements Store {
   }
   close() {
     this.db.close();
-  }
-}
-export class TiDBStore implements Store {
-  label = "TiDB Cloud · TLS";
-  private pool: mysql.Pool;
-  constructor(url: string) {
-    this.pool = mysql.createPool({
-      uri: url,
-      ssl: { rejectUnauthorized: true },
-      connectionLimit: 4,
-    });
-  }
-  async init() {
-    await this.pool.execute(
-      "CREATE TABLE IF NOT EXISTS jev_terminal_state (id INT PRIMARY KEY, data LONGTEXT NOT NULL)",
-    );
-    await this.pool.execute(
-      "INSERT IGNORE INTO jev_terminal_state (id,data) VALUES (1,?)",
-      [JSON.stringify(initialState())],
-    );
-    return this;
-  }
-  async read() {
-    const [rows] = await this.pool.query<mysql.RowDataPacket[]>(
-      "SELECT data FROM jev_terminal_state WHERE id=1",
-    );
-    return JSON.parse(rows[0].data) as AgentState;
-  }
-  async mutate(fn: (s: AgentState) => void) {
-    const connection = await this.pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      const [rows] = await connection.query<mysql.RowDataPacket[]>(
-        "SELECT data FROM jev_terminal_state WHERE id=1 FOR UPDATE",
-      );
-      const state = JSON.parse(rows[0].data) as AgentState;
-      fn(state);
-      state.revision++;
-      await connection.execute(
-        "UPDATE jev_terminal_state SET data=? WHERE id=1",
-        [JSON.stringify(state)],
-      );
-      await connection.commit();
-      return state;
-    } catch (e) {
-      await connection.rollback();
-      throw e;
-    } finally {
-      connection.release();
-    }
-  }
-  async close() {
-    await this.pool.end();
   }
 }

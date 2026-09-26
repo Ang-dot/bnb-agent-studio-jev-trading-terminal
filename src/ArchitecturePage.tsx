@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Info, LoaderCircle, Play, ShieldCheck, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, Database, FileText, Info, LoaderCircle, Play, ShieldCheck, X } from 'lucide-react';
 import { TypeSafeLogo } from './TypeSafeLogo.js';
 import bnbLogo from './assets/bnb-chain-symbol-yellow.svg';
 import brainLogo from './assets/living-brain-logo.png';
@@ -9,7 +9,6 @@ import gmgnLogo from './assets/gmgn-symbol.svg';
 import grokLogo from './assets/grok-symbol.svg';
 import nodeopsLogo from './assets/nodeops-symbol.png';
 import noderealLogo from './assets/nodereal-logo.svg';
-import tidbLogo from './assets/tidb-symbol.svg';
 import { AssessmentReceiptView } from './AssessmentReceipt.js';
 import { architectureComponents as components, architectureReducer, architectureSteps as steps, initialArchitecture, loadLatestReceipt, REPOSITORY_URL, type ArchitectureComponent } from './architecture-model.js';
 import type { Decision } from './types.js';
@@ -21,12 +20,12 @@ const brandMarks = {
   grok: {src: grokLogo, alt: 'Grok'},
   geckoterminal: {src: geckoLogo, alt: 'GeckoTerminal'},
   nodeops: {src: nodeopsLogo, alt: 'NodeOps'},
-  tidb: {src: tidbLogo, alt: 'TiDB'},
   nodereal: {src: noderealLogo, alt: 'NodeReal'},
 } as const;
-type BrandMarkId = keyof typeof brandMarks;
+type BrandMarkId = keyof typeof brandMarks | 'supabase';
 
 function BrandMark({id, decorative=false}:{id:BrandMarkId; decorative?:boolean}) {
+  if (id==='supabase') return <Database className="arch-brand-mark" aria-label={decorative?undefined:'Supabase'} aria-hidden={decorative} width={28} height={28}/>;
   const mark = brandMarks[id];
   const alt = decorative ? '' : mark.alt;
   if (id==='nodereal') return <span className="arch-nodereal-mark"><img src={mark.src} alt={alt}/></span>;
@@ -105,7 +104,7 @@ export function ArchitecturePage() {
           </div>
           <p className="arch-map-caption">“JEV proposes. Code gates execution. Memory preserves experience.”</p>
         </section>
-        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{(state.component==='gmgn'||state.component==='grok'||state.component==='geckoterminal'||state.component==='nodeops'||state.component==='tidb'||state.component==='nodereal')&&<BrandMark id={state.component} decorative/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
+        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{(state.component==='gmgn'||state.component==='grok'||state.component==='geckoterminal'||state.component==='nodeops'||state.component==='supabase'||state.component==='nodereal')&&<BrandMark id={state.component} decorative/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
           {state.component==='studio'&&<section className="arch-sdk-summary"><h3>SDK foundation</h3><p>Chain context and unsigned intents keep model judgment separate from execution.</p></section>}
           <p className="arch-component-note"><Info size={19}/><span>{spotlight.note}</span></p></div>
           {state.component==='geckoterminal'&&<p className="arch-data-attribution"><a href="https://www.geckoterminal.com" target="_blank" rel="noopener noreferrer">On-chain data provided by GeckoTerminal <ArrowUpRight size={14}/></a></p>}
@@ -114,7 +113,7 @@ export function ArchitecturePage() {
         </aside>
       </div>
     </main>
-    <footer className="arch-infrastructure"><h2>SUPPORTING INFRASTRUCTURE</h2>{(['nodeops','tidb','nodereal'] as const).map(id=><button key={id} onClick={()=>select(id)} aria-label={`Inspect ${components[id].name}`} aria-pressed={state.component===id} className={nodeClass(id)}><BrandMark id={id}/><span><strong>{components[id].name}</strong><small>{id==='nodeops'?'Hosts the always-on worker':id==='tidb'?'Durable ledger, evidence and outcomes':'On-demand read-only chain checks'}</small></span></button>)}<p>Explore a component, or present the decision journey.</p></footer>
+    <footer className="arch-infrastructure"><h2>SUPPORTING INFRASTRUCTURE</h2>{(['nodeops','supabase','nodereal'] as const).map(id=><button key={id} onClick={()=>select(id)} aria-label={`Inspect ${components[id].name}`} aria-pressed={state.component===id} className={nodeClass(id)}><BrandMark id={id}/><span><strong>{components[id].name}</strong><small>{id==='nodeops'?'Hosts the always-on worker':id==='supabase'?'Durable ledger, evidence and outcomes':'On-demand read-only chain checks'}</small></span></button>)}<p>Explore a component, or present the decision journey.</p></footer>
     {receiptOpen&&<RecordedReceipt close={()=>setReceiptOpen(false)}/>}
   </div>;
 }

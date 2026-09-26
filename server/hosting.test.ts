@@ -8,8 +8,8 @@ describe('hosted terminal safety', () => {
   it('refuses cloud mode without durable storage and an origin secret', () => {
     expect(() => hostedSettings({ HOSTING_MODE: 'cloud' })).toThrow();
     expect(hostedSettings({})).toBeNull();
-    expect(hostedSettings({ HOSTING_MODE: 'cloud', TIDB_DATABASE_URL: 'mysql://example', ORIGIN_SECRET: 'x'.repeat(40), PUBLIC_ORIGIN: 'https://jev.pages.dev' })?.bind).toBe('0.0.0.0');
-    expect(() => hostedSettings({ HOSTING_MODE: 'cloud', TIDB_DATABASE_URL: 'mysql://example', ORIGIN_SECRET: 'short', PUBLIC_ORIGIN: 'https://jev.pages.dev' })).toThrow();
+    expect(hostedSettings({ HOSTING_MODE: 'cloud', SUPABASE_DATABASE_URL: 'postgresql://example', ORIGIN_SECRET: 'x'.repeat(40), PUBLIC_ORIGIN: 'https://jev.pages.dev' })?.bind).toBe('0.0.0.0');
+    expect(() => hostedSettings({ HOSTING_MODE: 'cloud', SUPABASE_DATABASE_URL: 'postgresql://example', ORIGIN_SECRET: 'short', PUBLIC_ORIGIN: 'https://jev.pages.dev' })).toThrow();
   });
   it('requires a signed unexpired Access token for the exact audience and operator', async () => {
     const { privateKey, publicKey } = await generateKeyPair('RS256');
