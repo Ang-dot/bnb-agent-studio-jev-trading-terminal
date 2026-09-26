@@ -3,6 +3,14 @@ import { Engine } from "./engine.js";
 import { Providers } from "./providers.js";
 import { SqliteStore } from "./store.js";
 import type { Pool, Snapshot, Judgment, XResearch } from "../src/types.js";
+import { createAssessmentWork } from '../app/agent/src/work.js';
+import type { AssessmentRunner } from '../app/agent/src/assessment.js';
+import { randomUUID } from 'node:crypto';
+import { startAssessmentService } from '../app/agent/src/service.js';
+function testRunner(store: SqliteStore, providers: Providers, evidence?: Parameters<typeof createAssessmentWork>[0]['evidence']): AssessmentRunner {
+  const work = createAssessmentWork({store, providers, evidence});
+  return { assess: (pool, monitoring, guard) => work({requestId:randomUUID(), pool, monitoring}, guard) };
+}
 const pool: Pool = {
   address: "0x" + "1".repeat(40),
   token: "0x" + "2".repeat(40),
@@ -83,11 +91,51 @@ function setup() {
   Object.assign(providers, { security: retiredSecurity });
   vi.spyOn(providers, "judge").mockResolvedValue(judgment);
   vi.spyOn(providers, "capture").mockResolvedValue("pending · fixture");
-  const engine = new Engine(store, providers);
+  const engine = new Engine(store, providers, testRunner(store, providers));
   engine.pools = [pool];
   return { engine, store, providers, research, retiredSecurity };
 }
 describe("autonomous paper loop with mocked providers", () => {
+  it('delivers the provider assessment over Studio HTTP before a paper fill and memory capture', async()=>{
+    const {store,providers}=setup();
+    const service=await startAssessmentService({work:createAssessmentWork({store,providers})});
+    const engine=new Engine(store,providers,service.runner);engine.pools=[pool];
+    try {
+      await store.mutate(s=>{s.running=true;s.approvedPools=[pool.address];});
+      await engine.cycle();
+      const state=await store.read(),d=state.decisions[0];
+      expect(state.ledger.fills).toHaveLength(1);
+      expect(d.assessmentReceipt).toMatchObject({service:'BNB Agent Studio',outcome:'completed',transport:'private-http'});
+      expect(d.assessmentReceipt?.stages.map(s=>s.name)).toEqual(['Grok / X','GMGN market pool','Bitquery','Supporting research','Living Brain','JEV']);
+      expect(providers.capture).toHaveBeenCalledWith(expect.objectContaining({assessmentReceipt:d.assessmentReceipt,status:'executed'}));
+      expect(service.info().completedRequests).toBe(1);
+    } finally {await service.close();store.close();}
+  });
+  it('keeps the Studio receipt and names a failed memory stage without falling back to JEV',async()=>{
+    const {store,providers}=setup();vi.mocked(providers.memories).mockRejectedValue(new Error('private provider detail'));
+    const service=await startAssessmentService({work:createAssessmentWork({store,providers})});
+    const engine=new Engine(store,providers,service.runner);engine.pools=[pool];
+    try {
+      await engine.cycle(pool.address);const state=await store.read(),d=state.decisions[0];
+      expect(d.assessmentReceipt?.outcome).toBe('skipped');
+      expect(d.assessmentReceipt?.stages.at(-1)).toMatchObject({name:'Living Brain',status:'failed'});
+      expect(JSON.stringify(d)).not.toContain('private provider detail');
+      expect(providers.judge).not.toHaveBeenCalled();expect(state.ledger.fills).toHaveLength(0);
+    } finally {await service.close();store.close();}
+  });
+  it("fails closed when the Studio assessment service is unavailable", async () => {
+    const { store, providers } = setup();
+    const unavailable = { assess: vi.fn().mockRejectedValue(new Error("private service offline")) };
+    const engine = new Engine(store, providers, unavailable as any);
+    engine.pools = [pool];
+    await store.mutate(s => { s.running = true; s.approvedPools = [pool.address]; });
+    await engine.cycle();
+    expect(unavailable.assess).toHaveBeenCalledOnce();
+    expect(providers.judge).not.toHaveBeenCalled();
+    expect((await store.read()).ledger.fills).toHaveLength(0);
+    expect((await store.read()).decisions[0].reasons[0]).toContain("Agent Studio");
+    store.close();
+  });
   it('restores held pool/token identities from the ledger after restart without trending discovery', async () => {
     const {engine,store,providers}=setup(); engine.pools=[];
     await store.mutate(s=>{s.ledger.positions=[{pool:pool.address,token:pool.token,name:pool.name,quantity:1,costUsd:1} as any];});
@@ -106,7 +154,7 @@ describe("autonomous paper loop with mocked providers", () => {
   it("pins available shadow evidence without exposing it to the trading model", async () => {
     const {store,providers}=setup();
     const evidence = {token:pool.token,mode:"shadow",startedAt:Date.now()-1000,completedAt:Date.now()-500} as any;
-    const engine = new Engine(store,providers,()=>evidence); engine.pools=[pool];
+    const engine = new Engine(store,providers,testRunner(store,providers,()=>evidence)); engine.pools=[pool];
     await engine.cycle(pool.address);
     const d=(await store.read()).decisions[0];
     expect(d.supportingEvidence).toEqual(evidence);
@@ -117,7 +165,7 @@ describe("autonomous paper loop with mocked providers", () => {
   });
   it("does not attach future observations to a past decision", async () => {
     const {store,providers}=setup();
-    const engine=new Engine(store,providers,()=>({token:pool.token,startedAt:Date.now(),completedAt:Date.now()+60000}) as any); engine.pools=[pool];
+    const engine=new Engine(store,providers,testRunner(store,providers,()=>({token:pool.token,startedAt:Date.now(),completedAt:Date.now()+60000}) as any)); engine.pools=[pool];
     await engine.cycle(pool.address);
     expect((await store.read()).decisions[0].supportingEvidence).toBeUndefined();
     store.close();

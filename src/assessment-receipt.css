@@ -1,0 +1,17 @@
+.studio-receipt{margin:14px 20px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;color:#192132;font-size:12px;overflow:hidden}
+.studio-receipt>summary{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;list-style:none;min-height:48px;background:#fffdf5}
+.studio-receipt>summary::-webkit-details-marker{display:none}
+.studio-receipt>summary>svg:first-child{color:#a7830b;flex-shrink:0}
+.studio-receipt>summary>span{display:grid;gap:3px;flex:1}.studio-receipt>summary strong{font-size:12px}.studio-receipt>summary small{font-size:10px;color:#788294}
+.studio-receipt>summary>b{font-size:10px;font-weight:600;color:#6e6240}.studio-receipt[open]>summary>svg:last-child{transform:rotate(180deg)}
+.studio-receipt-body{padding:14px}.studio-receipt-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:10px;color:#788294}
+.studio-receipt code{display:block;font-size:10px;overflow-wrap:anywhere;margin-top:9px;color:#667085}
+.studio-receipt-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}.studio-receipt-metrics dt{font-size:10px;color:#788294;margin-bottom:5px}.studio-receipt-metrics dd{font-size:15px;font-weight:650;margin:0}
+.studio-receipt-stages{list-style:none;padding:0;margin:12px 0}.studio-receipt-stages li{display:flex;align-items:center;gap:10px;min-height:32px;position:relative}
+.studio-receipt-stages li:not(:last-child):after{content:'';position:absolute;left:9px;top:25px;bottom:-7px;width:1px;background:#e5e7eb}
+.studio-receipt-stages li>span{width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#edf7ef;color:#328958;z-index:1}.studio-receipt-stages li>span.failed{background:#fff0e4;color:#b76918}
+.studio-receipt-stages strong{font-weight:500;flex:1}.studio-receipt-stages small{color:#788294;font-variant-numeric:tabular-nums}
+.studio-receipt-evidence{border-top:1px solid #eceef1;padding-top:6px;line-height:1.6;color:#667085}.studio-receipt-evidence p{font-size:11px;margin:9px 0}.studio-receipt-evidence small{font-size:10px}
+.studio-receipt-links{display:flex;gap:6px;flex-wrap:wrap;overflow-wrap:anywhere}.studio-receipt-links span{background:#f5f6f8;padding:4px 7px;border-radius:4px;font-size:10px;max-width:100%}
+.studio-receipt-note{display:block;margin-top:12px;font-size:10px;color:#8b93a1;line-height:1.6}
+@media(max-width:600px){.studio-receipt{margin:12px}.studio-receipt>summary{gap:7px;padding:12px 10px}.studio-receipt>summary>b{max-width:75px}.studio-receipt-metrics dd{font-size:13px}}

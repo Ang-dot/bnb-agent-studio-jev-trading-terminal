@@ -1,0 +1,25 @@
+# Derived from bag init's X402-only custom-work scaffold. This project uses a
+# custom NodeOps container adapter, NOT bag deploy / managed AgentCore hosting.
+[project]
+name = "jevassessment"
+
+[stack]
+protocols = ["X402"]
+
+[network]
+default = "bsc-mainnet"
+
+[llm]
+# The work hook calls our existing JEV provider; no second generic LLM.
+provider = "none"
+
+[payments.b402_seller]
+enabled = true
+price_usd = "0"
+assets = ["U"]
+work_timeout_seconds = 150
+# FREE bypasses payment, signing and settlement. The stock route is anonymous;
+# our adapter MUST enforce loopback + per-boot auth + one-use job admission.
+
+[budget]
+enabled = false

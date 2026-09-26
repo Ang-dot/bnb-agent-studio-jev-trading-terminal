@@ -51,6 +51,7 @@ export function publicState(s: TerminalState): TerminalState {
     return record;
   });
   return {
+    assessmentService:s.assessmentService ? {...s.assessmentService} : undefined,
     revision:s.revision,approvedPools:[...s.approvedPools],running:s.running,halted:s.halted,lastCycleAt:s.lastCycleAt,
     ledger:{...structuredClone(s.ledger),consumedDecisions:[]},decisions,
     memoryEpisodes:s.memoryEpisodes?.map(e=>({...structuredClone(e),content:{summary:e.summary,publicView:true},capture:{...e.capture,sourceId:undefined}})),

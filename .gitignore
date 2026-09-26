@@ -18,3 +18,4 @@ createos.json
 *.p12
 *.pfx
 docs/bsc-x-research.json
+.studio/

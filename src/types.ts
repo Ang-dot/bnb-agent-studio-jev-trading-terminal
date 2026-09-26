@@ -149,6 +149,7 @@ export interface Ledger {
   dailyLoss: Record<string, number>;
 }
 export interface Decision {
+  assessmentReceipt?: AssessmentReceipt;
   memoryReadAt?: number;
   memoryEpisodeId?: string;
   researchInput?: ResearchInput;
@@ -177,6 +178,34 @@ export interface Decision {
     halted: boolean;
   };
 }
+export interface AssessmentStage {
+  name: string;
+  startedAt: number;
+  durationMs: number;
+  status: 'completed' | 'failed';
+}
+export interface AssessmentReceipt {
+  service: 'BNB Agent Studio';
+  runtimeVersion: string;
+  serviceVersion: string;
+  transport: 'private-http';
+  requestId: string;
+  outcome: 'completed' | 'skipped' | 'duplicate';
+  startedAt: number;
+  completedAt: number;
+  durationMs: number;
+  stages: AssessmentStage[];
+}
+export interface AssessmentServiceInfo {
+  name: 'BNB Agent Studio';
+  runtimeVersion: string;
+  serviceVersion: string;
+  state: 'ready' | 'unavailable';
+  visibility: 'backend-only';
+  payments: false;
+  completedRequests: number;
+  lastCompletedAt?: number;
+}
 export interface Check {
   label: string;
   pass: boolean;
@@ -200,6 +229,7 @@ export interface AgentState {
   lastCycleAt: number | null;
 }
 export interface TerminalState extends AgentState {
+  assessmentService?: AssessmentServiceInfo;
   access?: { operator: boolean };
   exitError?: string | null;
   pools: Pool[];

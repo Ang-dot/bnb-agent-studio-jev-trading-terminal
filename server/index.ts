@@ -17,6 +17,9 @@ import { MemoryLoop } from './memory-loop.js';
 import { CloudStore } from './cloud-store.js';
 import { hostedSettings, cloudAccess, publicState, SharedReadCache } from './hosting.js';
 import { WorkerRuntime } from './worker-runtime.js';
+import { startAssessmentService } from '../app/agent/src/service.js';
+import { createAssessmentWork } from '../app/agent/src/work.js';
+import { assessmentFetch } from './assessment-signal.js';
 
 const port = z.coerce
   .number()
@@ -36,12 +39,17 @@ const publicReads = new SharedReadCache();
 if (!cloud) await store.mutate((s) => {
   s.running = false;
 });
-const guardedFetch: typeof fetch = async (input,init) => { await worker.assertActive();return fetch(input,init); };
+const guardedFetch: typeof fetch = async (input,init) => { await worker.assertActive();return assessmentFetch(input,init); };
 const providers = new Providers(process.env, guardedFetch);
 const evidenceArchive = cloud ?? new EvidenceArchive();
 const evidenceCollector = new EvidenceCollector(evidenceArchive);
 const learning = new MemoryLoop(store, providers);
-const engine = new Engine(store, providers, (token, at) => evidenceArchive.latest(token, at), learning);
+const studio = await startAssessmentService({work:createAssessmentWork({
+  providers, store,
+  evidence:(token,at)=>evidenceArchive.latest(token,at),
+  annotate:(memories,at)=>learning.annotate(memories,at),
+})});
+const engine = new Engine(store, providers, studio.runner, learning);
 const launches = new LaunchFeed();
 const graduations = new GraduationVerifier(launch =>
   readGraduation(launch, token => providers.poolForToken(token)),
@@ -100,10 +108,10 @@ app.use('/api', async(req,res,next)=>{
   next();
 });
 app.get("/api/health", (_req, res) =>
-  res.json({ ok: true, mode: "paper", liveExecution: false, workerActive: worker.active, hosting: hosting ? 'cloud' : 'local' }),
+  res.json({ ok: true, mode: "paper", liveExecution: false, workerActive: worker.active, hosting: hosting ? 'cloud' : 'local', assessmentService:studio.info() }),
 );
 app.get("/api/state", async (_req, res) => {
-  const state = await engine.state();
+  const state = {...await engine.state(),assessmentService:studio.info()};
   res.json(hosting && !res.locals.operator ? publicState(state) : {...state,access:{operator:true}});
 });
 app.get("/api/launches", (_req, res) => res.json(launches.state));
@@ -398,7 +406,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const)
     clearInterval(memoryTimer);
     clearInterval(launchTimer);
     // On forced termination the DB lease expires naturally; never release while work can still write.
-    server.close(()=>void worker.drain().then(async()=>{
+    server.close(()=>void studio.close().then(()=>worker.drain()).then(async()=>{
       await replays.finished();
       if(cloud)await cloud.release();else (evidenceArchive as EvidenceArchive).close();
       await store.close();process.exit(0);

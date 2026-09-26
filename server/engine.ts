@@ -6,9 +6,8 @@ import { paperExit } from "./exits.js";
 import type { Store } from "./store.js";
 import { proposedSwap, sdkInfo } from "./bnb.js";
 import type { MonitorTrigger } from "../src/monitoring.js";
-import type { SupportingEvidence } from "../src/enrichment.js";
-import { researchInput } from './research-input.js';
 import type { MemoryLoop } from './memory-loop.js';
+import type { AssessmentRunner } from '../app/agent/src/assessment.js';
 interface Observation {
   context: MonitorTrigger;
   active: () => boolean;
@@ -29,7 +28,7 @@ export class Engine {
   constructor(
     readonly store: Store,
     readonly providers: Providers,
-    private evidence?: (token: string, at: number) => SupportingEvidence | undefined | Promise<SupportingEvidence | undefined>,
+    private assessments: AssessmentRunner,
     private learning?: MemoryLoop,
   ) {}
   async discover() {
@@ -107,7 +106,7 @@ export class Engine {
     observation?: Observation,
   ): Promise<Decision | undefined> {
     const session = (await this.store.read()).paperSession;
-    let stage = "Provider configuration";
+    let stage = "Agent Studio";
     const assertActive = async () => {
       if (
         observation &&
@@ -117,7 +116,7 @@ export class Engine {
           "Monitoring paused or evidence expired before JEV; no new model call.",
         );
     };
-    const decision: Decision = {
+    let decision: Decision = {
       id: randomUUID(),
       time: Date.now(),
       pool: pool.address,
@@ -129,70 +128,19 @@ export class Engine {
       memoryStatus: "Not queried",
       checks: [],
     };
-    const missing = [
-      "Bitquery",
-      "Jev",
-      "Living Brain",
-      "Grok / X",
-    ].filter((name) => this.providers.statuses.get(name)?.state === "missing");
-    if (missing.length) {
-      decision.reasons = [
-        `Connect ${missing.join(", ")} to run Jev + memory. No model call or paper fill was made.`,
-      ];
-      await this.record(decision);
-      return decision;
-    }
     try {
       await assertActive();
-      // Research can be slow. Refresh market data AFTER it completes, not before.
-      stage = "Grok / X";
-      decision.research = await this.providers.research(pool);
-      if (!["ready", "no_results"].includes(decision.research.status)) {
-        decision.reasons = [
-          decision.research.detail,
-          "X evidence unavailable; no Jev call or execution.",
-        ];
+      // No direct-provider fallback. All live launch/inventory assessments must
+      // cross the Studio service boundary; code exits remain independent.
+      const assessed = await this.assessments.assess(pool, observation?.context, { assertActive });
+      if (assessed.outcome === 'duplicate') return;
+      decision = assessed.decision;
+      if (assessed.outcome !== 'completed') {
         await this.record(decision);
         return decision;
       }
-      await assertActive();
-      stage = "GMGN market pool";
-      const fresh = await this.providers.pool(pool.address, pool.token);
-      stage = "Bitquery";
-      decision.snapshot = await this.providers.snapshot(fresh);
-      const position = (await this.store.read()).ledger.positions.find(p=>p.pool===pool.address);
-      if(position) decision.snapshot.position = {quantity:position.quantity,costUsd:position.costUsd,returnPct:(netExitUnit(decision.snapshot)*position.quantity/position.costUsd-1)*100,takeProfits:position.takeProfits??0};
-      if (observation) decision.snapshot.monitoring = observation.context;
-      decision.id = createHash("sha256")
-        .update(`paper-v1:${decision.snapshot.candleId}`)
-        .digest("hex")
-        .slice(0, 24);
-      if ((await this.store.read()).decisions.some((d) => d.id === decision.id))
-        return;
-      stage = "Living Brain";
-      decision.supportingEvidenceAt = Date.now();
-      try {
-        const evidence=await this.evidence?.(pool.token.toLowerCase(),decision.supportingEvidenceAt);
-        if(evidence?.token===pool.token.toLowerCase()&&evidence.completedAt<=decision.supportingEvidenceAt&&evidence.startedAt>=decision.supportingEvidenceAt-300000){
-          decision.supportingEvidence=structuredClone(evidence);
-          decision.researchInput=researchInput(evidence,pool.token,pool.address,decision.supportingEvidenceAt);
-        }
-      } catch { /* Research is optional and never synthesised. */ }
-      decision.memories = decision.researchInput ? await this.providers.memories(fresh,decision.researchInput) : await this.providers.memories(fresh);
-      decision.memoryReadAt=Date.now();
-      if(this.learning)decision.memories=await this.learning.annotate(decision.memories,decision.memoryReadAt);
-      decision.memoryStatus = decision.memories.length
-        ? `${decision.memories.length} active pages retrieved`
-        : "Connected · cold start (no relevant memories)";
-      await assertActive();
-      stage = "JEV";
-      // Freeze the exact, semantically qualified projection sent to this model call.
-      decision.judgment = decision.researchInput ? await this.providers.judge(decision.snapshot,decision.memories,decision.research,decision.researchInput) : await this.providers.judge(
-        decision.snapshot,
-        decision.memories,
-        decision.research,
-      );
-      decision.time = Date.now();
+      if (!decision.snapshot || !decision.judgment || !decision.research || decision.pool !== pool.address || decision.snapshot.token !== pool.token)
+        throw new Error('Invalid assessment result');
       // Reload and evaluate INSIDE the transaction so a stop/pause during an API call wins.
       stage = "Paper ledger";
       await this.store.mutate((s) => {

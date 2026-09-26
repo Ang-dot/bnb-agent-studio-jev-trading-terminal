@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@bnbagent/sdk": "0.6.0",
+    "@bnbagent/studio-runtime": "0.0.14",
     "express": "^5.1.0",
     "jose": "^6.1.0",
     "lightweight-charts": "^5.0.0",

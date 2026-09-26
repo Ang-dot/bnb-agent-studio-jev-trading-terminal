@@ -6,5 +6,12 @@
 !server/**
 !src/
 !src/**
+!app/
+!app/agent/
+!app/agent/src/
+!app/agent/src/**
+!app/agent/studio.toml
 !Dockerfile
 **/*.test.ts
+**/*.test.tsx
+**/*.test.js
