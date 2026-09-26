@@ -227,7 +227,7 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
     <header className="tt-header">
       <div className="tt-brand"><img className="tt-chain-logo" src={bnbChainLogo} alt="BNB Chain" /><span className="tt-brand-divider" aria-hidden="true" /><div className="tt-product-brand"><TypeSafeLogo size={32} /><h1>Trading Terminal</h1></div></div>
       <div className="tt-session"><span>Paper capital <strong>{dollars(state?.ledger.initialCashUsd)}</strong></span><span className="tt-status"><Circle size={8} fill="currentColor" className={state?.running && !state.halted ? "tt-positive" : "tt-muted"} /> {state?.halted ? "Safety locked" : state?.running ? "Autonomous" : "Not armed"}</span></div>
-      <div className="tt-header-tools"><button onClick={onReplay} title="Open historical JEV replay"><History size={15} /> Replay</button><button aria-label="Paper trading policy" title="Paper trading policy" onClick={() => setModal("policy")}><ShieldCheck size={18} /></button></div>
+      <div className="tt-header-tools"><a className="tt-architecture-link" href="/architecture">Architecture <ArrowUpRight size={14}/></a><button onClick={onReplay} title="Open historical JEV replay"><History size={15} /> Replay</button><button aria-label="Paper trading policy" title="Paper trading policy" onClick={() => setModal("policy")}><ShieldCheck size={18} /></button></div>
     </header>
 
     <section className="tt-current" aria-label="Current agent activity">
