@@ -1,6 +1,6 @@
 # JEV Trading Terminal
 
-Private source repository for the BNB Chain paper-trading demo. The terminal follows Flap and Four.meme launches, collects supporting market and social evidence, records JEV assessments and paper results, and coordinates experience capture and recall with Living Brain.
+Repository for the BNB Chain paper-trading demo. The terminal follows Flap and Four.meme launches, collects supporting market and social evidence, records JEV assessments and paper results, and coordinates experience capture and recall with Living Brain.
 
 ## Current deployment status
 
