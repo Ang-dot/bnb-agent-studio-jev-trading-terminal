@@ -4,6 +4,7 @@ import { TypeSafeLogo } from './TypeSafeLogo.js';
 import bnbLogo from './assets/bnb-chain-symbol-yellow.svg';
 import brainLogo from './assets/living-brain-logo.png';
 import geckoLogo from './assets/geckoterminal-symbol.svg';
+import githubMark from './assets/github-mark.svg';
 import gmgnLogo from './assets/gmgn-symbol.svg';
 import grokLogo from './assets/grok-symbol.svg';
 import nodeopsLogo from './assets/nodeops-symbol.png';
@@ -77,7 +78,7 @@ export function ArchitecturePage() {
     <a className="arch-skip" href="#architecture-map">Skip to architecture</a>
     <header className="arch-header">
       <a className="arch-brand" href="/" aria-label="BNB Chain JEV Trading Terminal"><span className="arch-chain"><img src={bnbLogo} alt="BNB Chain"/> <span>BNB CHAIN</span></span><span className="arch-brand-divider" aria-hidden="true"/><span className="arch-product"><TypeSafeLogo size={38}/><b>JEV</b><span>Trading Terminal</span></span></a>
-      <nav aria-label="Main navigation"><a href="/">Terminal</a><a href="/architecture" aria-current="page">Architecture</a><a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" title="View the public source repository">GitHub <ArrowUpRight size={16}/></a></nav>
+      <nav aria-label="Main navigation"><a href="/">Terminal</a><a href="/architecture" aria-current="page">Architecture</a><a className="arch-github" href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="View the public source repository"><img src={githubMark} alt=""/></a></nav>
       <button ref={presentButton} className="arch-present" aria-pressed={state.presenting} onClick={()=>dispatch({type:state.presenting?'exit':'present'})}>{state.presenting?<X size={16}/>:<Play size={16} fill="currentColor"/>}{state.presenting?'Exit walkthrough':'Present walkthrough'}</button>
     </header>
     <main>

@@ -8,6 +8,8 @@ describe('architecture presentation', () => {
     const html = renderToStaticMarkup(<ArchitecturePage />);
     expect(html).toContain('From new launch to informed action.');
     expect(html).toContain('href="https://github.com/Ang-dot/bnb-agent-studio-jev-trading-terminal"');
+    expect(html).toContain('aria-label="GitHub"');
+    expect(html).not.toContain('>GitHub');
     expect(html).toContain('Live signer locked');
     expect(html).toContain('No payment or public inference endpoint.');
     expect(html).toContain('aria-label="Inspect BNB Agent Studio"');
