@@ -2,8 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import {
   parseJudgment,
   BitqueryTokens,
-  parsePools,
-  parseCandles,
   Providers,
 } from "./providers.js";
 import type { Snapshot, XResearch } from "../src/types.js";
@@ -28,22 +26,22 @@ describe("provider boundary", () => {
     expect(JSON.parse(payload.content).decision).not.toHaveProperty("supportingEvidence");
     expect(JSON.parse(payload.content).decision).not.toHaveProperty("supportingEvidenceAt");
   });
-  it("resolves a matching liquid PancakeSwap pool without applying the $50k buy gate", async () => {
-    const token = "0x" + "a".repeat(40);
-    const row = (pool: string, base: string, liquidity: number) => ({
-      attributes: { address: pool, name: "Fixture / WBNB", base_token_price_usd: "0.01", reserve_in_usd: String(liquidity),
-        volume_usd: { h24: "1000" }, price_change_percentage: { h1: "1", h24: "2" }, transactions: { h1: { buys: 1, sells: 1 } } },
-      relationships: { base_token: { data: { id: `bsc_${base}` } }, dex: { data: { id: "pancakeswap-v3-bsc" } } },
-    });
-    const fetchImpl = vi.fn(async (_url: unknown) => Response.json({ data: [
-      row("0x" + "1".repeat(40), "0x" + "c".repeat(40), 100000),
-      row("0x" + "2".repeat(40), token, 10000), row("0x" + "3".repeat(40), token, 20000),
-    ] }));
-    const providers = new Providers({}, fetchImpl);
-    expect(await providers.poolForToken(token)).toMatchObject({ address: "0x" + "3".repeat(40), token, liquidityUsd: 20000 });
-    expect(String(fetchImpl.mock.calls[0][0])).toContain(`/networks/bsc/tokens/${token}/pools`);
-    const missing = new Providers({}, async () => Response.json({ data: [row("0x" + "1".repeat(40), "0x" + "c".repeat(40), 100000)] }));
-    await expect(missing.poolForToken(token)).rejects.toThrow("Matching PancakeSwap market unavailable");
+  it("uses GMGN pool metadata but preserves a separately timestamped Bitquery execution price", async () => {
+    const token = '0x' + 'a'.repeat(40), pool = '0x' + 'b'.repeat(40), now = Date.now();
+    const market: any = {address: pool, token, priceUsd: .01, discoveredAt: now - 1000, liquidityUsd: 20000,
+      marketData: {source: 'GMGN', metricsScope: 'token', receivedAt: now, providerAsOf: null}};
+    const gmgn: any = {poolForToken: vi.fn(async () => market), pool: vi.fn(async () => market)};
+    const fetchImpl = vi.fn(async (url: any) => Response.json(String(url).includes('oauth')
+      ? {access_token:'fixture',expires_in:120}
+      : {data:{Trading:{Trades:[{Block:{Time:new Date(now-5000).toISOString()},PriceInUsd:.02,Pair:{Pool:{Address:pool},Token:{Address:token}}}]}}}));
+    const providers = new Providers({BITQUERY_CLIENT_ID:'fixture',BITQUERY_CLIENT_SECRET:'fixture'}, fetchImpl, gmgn);
+    expect(await providers.poolForToken(token)).toBe(market);
+    expect(await providers.pool(pool, token)).toBe(market);
+    const snapshot = await providers.snapshot(market);
+    expect(snapshot).toMatchObject({source:'bitquery',priceUsd:.02,marketAt:now-5000,observedAt:now-1000,metricsSource:'GMGN',metricsScope:'token',metricsReceivedAt:now});
+    expect(providers.statuses.has('GeckoTerminal')).toBe(false);
+    expect(providers.statuses.get('GMGN')?.state).toBe('ready');
+    expect(fetchImpl.mock.calls.every(([url]) => String(url).includes('bitquery.io'))).toBe(true);
   });
   it("sends typed source assessments with explicit evidence IDs and preserves the returned judgments", async () => {
     const snapshot: Snapshot = { pool: "0x" + "1".repeat(40), token: "0x" + "2".repeat(40), name: "Fixture",
@@ -131,18 +129,5 @@ describe("provider boundary", () => {
     now = 61000;
     await tokens.get();
     expect(fetchImpl).toHaveBeenCalledTimes(2);
-  });
-  it("does not coerce absent market data to zero", () => {
-    expect(
-      parsePools(
-        { data: [{ attributes: { address: "0x" + "1".repeat(40) } }] },
-        0,
-      ),
-    ).toEqual([]);
-    expect(() =>
-      parseCandles({
-        data: { attributes: { ohlcv_list: [[1, 1, 2, 0, 1, null]] } },
-      }),
-    ).toThrow();
   });
 });

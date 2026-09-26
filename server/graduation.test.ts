@@ -9,7 +9,7 @@ describe("GMGN graduation trust boundary", () => {
   it.each(["flap", "fourmeme"] as const)("trusts fresh %s graduation without RPC proof", async platform => {
     const resolvePool = vi.fn(async () => ({ address: pool, token }));
     const result = await readGraduation({ ...launch, platform }, resolvePool, () => now);
-    expect(result).toMatchObject({ status: "gmgn_reported", source: "GMGN", pool, checkedAt: now });
+    expect(result).toMatchObject({ status: "gmgn_reported", source: "GMGN", poolSource: "GMGN", pool, checkedAt: now });
     expect(result.block).toBeUndefined();
     expect(resolvePool).toHaveBeenCalledWith(token);
   });

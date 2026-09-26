@@ -62,7 +62,7 @@ const monitor = await new MonitorService({
     // This callback is reached only after monitoring qualification. Fetch in the
     // background, never wait for enrichment before a decision or an exit.
     void worker.run(()=>evidenceCollector.refresh(launch.address));
-    const pool = await providers.pool(verification.pool!);
+    const pool = await providers.pool(verification.pool!, launch.address);
     if (pool.token.toLowerCase() !== launch.address || !active())
       throw new Error("Monitoring evidence unavailable");
     if (!engine.pools.some((p) => p.address === pool.address))
@@ -174,7 +174,7 @@ app.post("/api/launches/:token/inspect", async (req, res) => {
       error: "Fresh GMGN graduation and a matching market pool are required before assessment.",
     });
   try {
-    const pool = await providers.pool(verification.pool);
+    const pool = await providers.pool(verification.pool, launch.address);
     if (pool.token.toLowerCase() !== launch.address)
       return res.status(409).json({
         error:
@@ -197,13 +197,16 @@ app.get("/api/candles/:pool", async (req, res) => {
     .regex(/^0x[0-9a-fA-F]{40}$/)
     .parse(req.params.pool)
     .toLowerCase();
-  if (!engine.pools.some((p) => p.address === pool))
+  const market = engine.pools.find((p) => p.address === pool);
+  if (!market)
     return res.status(404).json({ error: "Pool is not in discovery" });
   const interval = z.enum(["1", "5", "15"]).parse(req.query.interval || "5");
   try {
     res.json({
-      candles: await publicReads.read(`candles:${pool}:${interval}`,()=>providers.candles(pool, interval)),
-      source: "GeckoTerminal",
+      candles: await publicReads.read(`gmgn:${market.token}:${interval}`,()=>launches.tokenCandles(market.token, interval)),
+      source: "GMGN",
+      scope: "Token-wide; not a verified execution-pool price",
+      token: market.token,
       pool,
       interval,
     });

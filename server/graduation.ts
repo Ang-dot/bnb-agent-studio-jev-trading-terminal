@@ -26,9 +26,9 @@ export async function readGraduation(
   } catch { /* Missing market data must not revoke or embellish GMGN's report. */ }
   if (!fresh())
     return { ...base, status: "unverified", detail: "GMGN observation expired while resolving market data. Await a fresh report." };
-  return { ...base, status: "gmgn_reported", pool, poolSource: pool ? "GeckoTerminal" : undefined,
+  return { ...base, status: "gmgn_reported", pool, poolSource: pool ? "GMGN" : undefined,
     detail: pool
-      ? "GMGN reports graduation. GeckoTerminal supplies a matching market pool; no independent on-chain migration check. Not a safety verdict or permission to buy."
+      ? "GMGN reports graduation and supplies a matching market pool; no independent on-chain migration check. Not a safety verdict or permission to buy."
       : "GMGN reports graduation; matching market pool unavailable. Graduation is accepted, but assessment still needs market data." };
 }
 export class GraduationVerifier {

@@ -10,7 +10,10 @@
 .tt-app svg { flex-shrink:0; stroke-width:1.7; }
 .tt-header { height:68px; border-bottom:1px solid var(--tt-line); padding:0 25px; display:flex; align-items:center; gap:24px; }
 .tt-brand { display:flex; align-items:center; gap:17px; min-width:0; }
-.tt-brand h1 { font-size:22px; letter-spacing:-.8px; font-weight:750; padding-left:17px; border-left:1px solid #d9dfe9; white-space:nowrap; }
+.tt-chain-logo { width:34px; height:34px; object-fit:contain; flex-shrink:0; }
+.tt-brand-divider { width:1px; height:28px; background:#d9dfe9; flex-shrink:0; }
+.tt-product-brand { display:flex; align-items:center; gap:10px; min-width:0; }
+.tt-brand h1 { font-size:22px; letter-spacing:-.8px; font-weight:750; white-space:nowrap; }
 .tt-network { display:flex; gap:8px; align-items:center; padding-left:16px; border-left:1px solid #d9dfe9; font-size:14px; }
 .tt-network svg { color:#dca600; }
 .tt-session { display:flex; align-items:center; gap:19px; margin-left:auto; white-space:nowrap; font-size:12px; }

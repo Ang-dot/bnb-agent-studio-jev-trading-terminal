@@ -34,22 +34,32 @@ export class Engine {
   ) {}
   async discover() {
     try {
-      const pools = await this.providers.discover();
       const state = await this.store.read();
+      // GMGN launch monitoring is the only discovery universe. Refresh existing
+      // positions by their persisted token+pool identities, including on restart.
+      const pools = this.pools.filter(p => state.approvedPools.includes(p.address) ||
+        state.ledger.positions.some(h => h.pool === p.address) || Date.now() - p.discoveredAt < 86400000);
+      let unavailable = false;
       for (const id of new Set([
         ...state.approvedPools,
         ...state.ledger.positions.map((p) => p.pool),
       ]))
-        if (!pools.some((p) => p.address === id))
           try {
-            pools.push(await this.providers.pool(id));
+            const token = state.ledger.positions.find(p => p.pool === id)?.token ??
+              pools.find(p => p.address === id)?.token ??
+              state.decisions.find(d => d.pool === id && d.snapshot?.pool === id)?.snapshot?.token;
+            if (!token) throw new Error('Stored pool has no token identity');
+            const fresh = await this.providers.pool(id, token);
+            const index = pools.findIndex(p => p.address === id);
+            if (index < 0) pools.push(fresh); else pools[index] = fresh;
           } catch {
+            unavailable = true;
             /* Previous observed data stays visibly aged, never execution-ready. */ const prior =
               this.pools.find((p) => p.address === id);
-            if (prior) pools.push(prior);
+            if (prior && !pools.some(p => p.address === id)) pools.push(prior);
           }
       this.pools = pools;
-      this.discoveryError = null;
+      this.discoveryError = unavailable ? 'Some original pools are unavailable from GMGN. Retained marks remain aged; no pool substitution.' : null;
     } catch {
       this.discoveryError =
         "Market discovery unavailable. Last observed data is retained with its timestamp.";
@@ -146,8 +156,8 @@ export class Engine {
         return decision;
       }
       await assertActive();
-      stage = "GeckoTerminal market pool";
-      const fresh = await this.providers.pool(pool.address);
+      stage = "GMGN market pool";
+      const fresh = await this.providers.pool(pool.address, pool.token);
       stage = "Bitquery";
       decision.snapshot = await this.providers.snapshot(fresh);
       const position = (await this.store.read()).ledger.positions.find(p=>p.pool===pool.address);
@@ -279,7 +289,7 @@ export class Engine {
     try {
       for(const held of start.ledger.positions) {
         try {
-          const fresh=await this.providers.pool(held.pool);
+          const fresh=await this.providers.pool(held.pool,held.token);
           const snapshot=await this.providers.snapshot(fresh);
           if(!marketExecutable(snapshot,Date.now())) throw new Error("Stale exit price");
           let record:Decision|undefined;

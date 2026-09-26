@@ -1,3 +1,4 @@
+import { marketSources } from "./market-provenance";
 import { apiPath } from "./api-path.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -518,7 +519,7 @@ export function App() {
               </div>
               <span className={`chart-source ${freshness > 90 ? "down" : ""}`}>
                 <span className="status-dot green" />
-                GeckoTerminal · {freshness}s ago
+                GMGN · token-wide candles
               </span>
             </div>
             <div className="chart-area">
@@ -631,11 +632,11 @@ export function App() {
                 <small>Arithmetic and timestamps stay in code.</small>
                 {decision?.snapshot && <details className="assessment-question">
                   <summary>Market inputs at this decision</summary>
-                  <p>Price: {price(decision.snapshot.priceUsd)} · Bitquery</p>
+                  <p>Price: {price(decision.snapshot.priceUsd)} · {marketSources(decision.snapshot).price}</p>
                   <p>Liquidity: {usd(decision.snapshot.liquidityUsd, 0)} · 24h volume: {usd(decision.snapshot.volume24h, 0)}</p>
                   <p>1h change: {decision.snapshot.change1h.toFixed(2)}% · buys / sells: {decision.snapshot.buyCount} / {decision.snapshot.sellCount}</p>
                   <p>Market time: {new Date(decision.snapshot.marketAt).toISOString()}</p>
-                  <p>Metrics observed: {new Date(decision.snapshot.observedAt).toISOString()} · GeckoTerminal</p>
+                  <p>{marketSources(decision.snapshot).metrics} · received {new Date(decision.snapshot.metricsReceivedAt ?? decision.snapshot.observedAt).toISOString()}</p>
                   <p>Stored input snapshot, not the chart’s current values.</p>
                 </details>}
               </div>

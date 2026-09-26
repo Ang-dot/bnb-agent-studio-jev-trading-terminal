@@ -88,6 +88,13 @@ function setup() {
   return { engine, store, providers, research, retiredSecurity };
 }
 describe("autonomous paper loop with mocked providers", () => {
+  it('restores held pool/token identities from the ledger after restart without trending discovery', async () => {
+    const {engine,store,providers}=setup(); engine.pools=[];
+    await store.mutate(s=>{s.ledger.positions=[{pool:pool.address,token:pool.token,name:pool.name,quantity:1,costUsd:1} as any];});
+    await engine.discover();
+    expect(providers.pool).toHaveBeenCalledWith(pool.address,pool.token);
+    expect(engine.pools).toEqual([pool]); store.close();
+  });
   it("preserves an X provider failure even when the slow search also expired monitoring", async () => {
     const {engine,store,providers,research}=setup(); let active=true;
     vi.mocked(providers.research).mockImplementation(async()=>{active=false;return {...research,status:"error",detail:"X search response failed evidence validation."};});

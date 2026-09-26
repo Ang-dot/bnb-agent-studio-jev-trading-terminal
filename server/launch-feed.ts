@@ -387,6 +387,13 @@ export class LaunchFeed {
       !this.state.launches.some((l) => l.address === token)
     )
       throw new Error("Unknown token");
+    return this.tokenCandles(token, interval);
+  }
+  // Callers must bind this token to a known launch or a persisted position.
+  // Held tokens can leave the bounded launch feed without losing their charts.
+  async tokenCandles(token: string, interval: "1" | "5" | "15") {
+    if (!address.test(token)) throw new Error("Invalid chart token");
+    token = token.toLowerCase();
     const key = `${token}:${interval}`;
     const cache = this.chartCache.get(key);
     if (cache && Date.now() - cache.at < 30000) return cache.candles;

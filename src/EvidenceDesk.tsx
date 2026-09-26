@@ -1,3 +1,4 @@
+import { marketSources } from "./market-provenance";
 import { apiPath } from "./api-path.js";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TypeSafeLogo } from "./TypeSafeLogo.js";
@@ -1533,6 +1534,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                     Recorded {time(record.snapshot.marketAt)} ·{" "}
                     {record.snapshot.source}
                   </p>
+                  <p>{marketSources(record.snapshot).metrics} · received {time(record.snapshot.metricsReceivedAt ?? record.snapshot.observedAt)}</p>
                   <div className="policy-grid">
                     <div>
                       <span>Price</span>

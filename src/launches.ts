@@ -59,7 +59,7 @@ export interface Graduation {
   // "verified" is retained only for already-saved historical replay records.
   status: "gmgn_reported" | "verified" | "bonding" | "unverified";
   source?: "GMGN";
-  poolSource?: "GeckoTerminal";
+  poolSource?: "GeckoTerminal" | "GMGN";
   checkedAt: number;
   block?: string;
   pool?: string;

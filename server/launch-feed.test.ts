@@ -17,6 +17,13 @@ const row = {
   created_timestamp: 1_790_000_000,
 };
 describe("GMGN discovery boundary", () => {
+  it('shares token-wide candles for a held token after it leaves launch discovery', async () => {
+    let calls = 0;
+    const feed = new LaunchFeed(async () => { calls++; return {list:[{time:1790000000000,open:'1',high:'2',low:'1',close:'2',volume:'10'}]}; });
+    await expect(feed.candles(address, '5')).rejects.toThrow('Unknown token');
+    const results = await Promise.all([feed.tokenCandles(address,'5'),feed.tokenCandles(address,'5')]);
+    expect(results[0]).toHaveLength(1); expect(results[1]).toEqual(results[0]); expect(calls).toBe(1);
+  });
   it("retains recently graduated tokens even when newer creations fill the bounded queue", async () => {
     const now = Date.now();
     const graduate = {

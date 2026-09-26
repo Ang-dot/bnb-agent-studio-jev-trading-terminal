@@ -18,6 +18,10 @@ export interface Pool {
   sells: number;
   discoveredAt: number;
   url: string;
+  marketData?: {
+    source: 'GMGN'; requestedAt: number; receivedAt: number;
+    providerAsOf: null; priceScope: 'token'; metricsScope: 'token';
+  };
 }
 export interface Candle {
   time: number;
@@ -42,6 +46,10 @@ export interface Snapshot {
   observedAt: number;
   marketAt: number;
   source: "bitquery" | "geckoterminal";
+  // Optional for backward compatibility with already-recorded snapshots.
+  metricsSource?: 'GMGN' | 'GeckoTerminal';
+  metricsScope?: 'token' | 'pool';
+  metricsReceivedAt?: number;
   candleId: string;
 }
 export interface Judgment {
