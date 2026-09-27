@@ -25,6 +25,8 @@ export class CloudStore implements Store {
   async init(){
     await initPostgresSchema(this.pool);
     await this.pool.query('INSERT INTO jev_private.jev_terminal_state (id,data) VALUES (1,$1) ON CONFLICT (id) DO NOTHING',[JSON.stringify(initialState())]);
+    // Row 1 retains the existing TOKEN2049 journal; KBW starts independently.
+    await this.pool.query('INSERT INTO jev_private.jev_terminal_state (id,data) VALUES (2,$1) ON CONFLICT (id) DO NOTHING',[JSON.stringify(initialState())]);
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_worker_lease (id integer PRIMARY KEY, owner varchar(64), epoch bigint NOT NULL, expires bigint NOT NULL)');
     await this.pool.query('INSERT INTO jev_private.jev_worker_lease (id,owner,epoch,expires) VALUES (1,NULL,0,0) ON CONFLICT (id) DO NOTHING');
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_runtime_records (name varchar(64) PRIMARY KEY, data text NOT NULL)');
@@ -68,6 +70,18 @@ export class CloudStore implements Store {
     const state=decodeState(rows[0].data);fn(state);state.revision++;
     await c.query('UPDATE jev_private.jev_terminal_state SET data=$1 WHERE id=1',[encodeState(state)]);return state;
   });}
+  kbwStore():Store {
+    return {
+      label:this.label+' · KBW',
+      read:async()=>{const {rows}=await this.pool.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=2');return decodeState(rows[0].data);},
+      mutate:async fn=>this.fenced(async c=>{
+        const {rows}=await c.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=2 FOR UPDATE');
+        const state=decodeState(rows[0].data);fn(state);state.revision++;
+        await c.query('UPDATE jev_private.jev_terminal_state SET data=$1 WHERE id=2',[encodeState(state)]);return state;
+      }),
+      close:()=>{}, // Shared pool and lease are owned by the root CloudStore.
+    };
+  }
   record(name:string):JsonPersistence {
     if(!/^[a-z0-9-]{1,64}$/.test(name))throw new Error('Invalid record');
     return {read:async()=>{const {rows}=await this.pool.query<{data:string}>('SELECT data FROM jev_private.jev_runtime_records WHERE name=$1',[name]);return rows[0]?.data;},

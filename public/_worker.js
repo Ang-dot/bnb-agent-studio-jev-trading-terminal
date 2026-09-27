@@ -2,6 +2,11 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const publicPath = url.pathname.replace(/\/+$/, '') || '/';
+    if (['GET', 'HEAD'].includes(request.method) && (publicPath === '/' || publicPath === '/architecture')) {
+      url.pathname = publicPath === '/' ? '/kbw' : '/kbw/architecture';
+      return Response.redirect(url.toString(), 302);
+    }
     const operator = url.pathname === '/operator' || url.pathname.startsWith('/operator/');
     const path = operator ? url.pathname.slice('/operator'.length) : url.pathname;
     if (path.startsWith('/api/')) {
@@ -28,8 +33,8 @@ export default {
       } catch {return Response.json({error:'Backend temporarily unavailable; no action confirmed'}, {status:503});}
     }
     // Pages redirects /index.html to /. Read the root asset internally so the
-    // browser stays on /operator and keeps using the authenticated API prefix.
-    if (operator) {url.pathname='/';return env.ASSETS.fetch(new Request(url,request));}
+    // browser keeps its event edition or authenticated operator path.
+    if (operator || /^\/(kbw|token2049)(?:\/architecture)?\/?$/.test(url.pathname)) {url.pathname='/';return env.ASSETS.fetch(new Request(url,request));}
     return env.ASSETS.fetch(request);
   },
 };

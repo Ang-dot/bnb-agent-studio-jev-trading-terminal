@@ -1,4 +1,5 @@
 import { apiPath } from "./api-path.js";
+import { useFrontendEdition } from "./FrontendEdition.js";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -28,6 +29,11 @@ const stanceColor = (s?: string) =>
   s === "consider_entry" ? "#159b73" : s === "avoid" ? "#cd4d51" : "#af8100";
 
 export function TerminalApp() {
+  const { label, memoryName } = useFrontendEdition();
+  useEffect(() => {
+    document.title = `${label} | JEV Trading Terminal`;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', `BNB Chain | ${label} JEV Trading Terminal — BSC launch discovery, agent decisions and ${memoryName} memory with paper trading.`);
+  }, [label, memoryName]);
   const [view, setView] = useState<"replay" | "live">("live");
   return (
     <div className={view === "live" ? "experience-live" : "experience-replay"}>
@@ -52,6 +58,7 @@ export function TerminalApp() {
   );
 }
 export function ReplayDesk({ onLive }: { onLive: () => void }) {
+  const { memoryName } = useFrontendEdition();
   const [run, setRun] = useState<ReplayRun | null>(null);
   const [questions, setQuestions] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
@@ -171,7 +178,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
       <header className="replay-header">
         <div>
           <span className="replay-eyebrow">
-            JEV + LIVING BRAIN / EVIDENCE DESK
+            JEV + {memoryName.toUpperCase()} / EVIDENCE DESK
           </span>
           <h1>Watch JEV read the market.</h1>
           <p>
@@ -199,8 +206,8 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
             Historical decision replay — not a full strategy backtest.
           </strong>
           <p>
-            Price-only screening. Historical X, security, liquidity and Living
-            Brain context are unavailable. No buys, simulated fills, P&amp;L or
+            Price-only screening. Historical X, security, liquidity and {memoryName}
+            {" "}context are unavailable. No buys, simulated fills, P&amp;L or
             live orders.
           </p>
         </div>
@@ -453,7 +460,7 @@ export function ReplayDesk({ onLive }: { onLive: () => void }) {
             <div className="replay-memory">
               <BrainCircuit size={18} />
               <div>
-                <strong>Living Brain · historical context unavailable</strong>
+                <strong>{memoryName} · historical context unavailable</strong>
                 <p>
                   Present-day memories are deliberately withheld to avoid future
                   information. This replay does not measure the benefit of JEV +

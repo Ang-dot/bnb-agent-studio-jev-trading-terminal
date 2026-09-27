@@ -89,7 +89,10 @@ export interface Memory {
   slug: string;
   title: string;
   summary: string;
-  similarity: number;
+  similarity: number | null;
+  provider?: 'mem9' | 'living-brain';
+  searchScore?: number;
+  sourceHash?: string;
   status: string;
 }
 export interface XSource {
@@ -233,6 +236,8 @@ export interface AgentState {
   lastCycleAt: number | null;
 }
 export interface TerminalState extends AgentState {
+  edition?: 'kbw' | 'token2049';
+  memoryProvider?: 'MEM9' | 'Living Brain';
   assessmentService?: AssessmentServiceInfo;
   access?: { operator: boolean };
   exitError?: string | null;

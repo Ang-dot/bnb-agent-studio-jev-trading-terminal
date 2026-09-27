@@ -1,0 +1,19 @@
+title = "JEV source secret scanning"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "gmgn-api-key"
+description = "GMGN API credential"
+regex = '''gmgn_[A-Za-z0-9]{24,}'''
+
+[[rules]]
+id = "living-brain-api-key"
+description = "Living Brain API credential"
+regex = '''lbk_[A-Za-z0-9_-]{20,}'''
+
+[[rules]]
+id = "openrouter-api-key"
+description = "OpenRouter API credential"
+regex = '''sk-or-v1-[a-fA-F0-9]{32,}'''

@@ -24,6 +24,7 @@ interface Dependencies {
   ) => Promise<Decision | undefined>;
   available: () => Promise<boolean>;
   now?: () => number;
+  memoryProvider?: string;
 }
 export class MonitorService {
   state: MonitorState = {
@@ -264,7 +265,7 @@ export class MonitorService {
       item.admittedAt ??= this.now();
       item.status = "assessing";
       item.detail =
-        "Collecting X, fresh market data and Living Brain context for JEV. Paper entry checks run separately.";
+        `Collecting X, fresh market data and ${this.deps.memoryProvider ?? 'Living Brain'} context for JEV. Paper entry checks run separately.`;
       const trigger: MonitorTrigger = {
         kind: "auto-monitor",
         admittedAt: item.admittedAt,

@@ -2,7 +2,7 @@ import { useEffect, useReducer, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Info, LoaderCircle, Play, ShieldCheck, X } from 'lucide-react';
 import { TypeSafeLogo } from './TypeSafeLogo.js';
 import bnbLogo from './assets/bnb-chain-symbol-yellow.svg';
-import brainLogo from './assets/living-brain-logo.png';
+import { MemoryLogo, useFrontendEdition } from './FrontendEdition.js';
 import geckoLogo from './assets/geckoterminal-symbol.svg';
 import githubMark from './assets/github-mark.svg';
 import gmgnLogo from './assets/gmgn-symbol.svg';
@@ -10,7 +10,7 @@ import grokLogo from './assets/grok-symbol.svg';
 import nodeopsLogo from './assets/nodeops-symbol.png';
 import noderealLogo from './assets/nodereal-logo.svg';
 import { AssessmentReceiptView } from './AssessmentReceipt.js';
-import { architectureComponents as components, architectureReducer, architectureSteps as steps, initialArchitecture, loadLatestReceipt, REPOSITORY_URL, type ArchitectureComponent } from './architecture-model.js';
+import { architectureForEdition, architectureReducer, architectureSteps as steps, initialArchitecture, loadLatestReceipt, REPOSITORY_URL, type ArchitectureComponent } from './architecture-model.js';
 import type { Decision } from './types.js';
 import './style.css';
 import './architecture.css';
@@ -48,6 +48,8 @@ function RecordedReceipt({close}:{close:()=>void}) {
 }
 
 export function ArchitecturePage() {
+  const { edition, label, memoryName, terminalPath, architecturePath } = useFrontendEdition();
+  const components = architectureForEdition(edition);
   const [state,dispatch]=useReducer(architectureReducer,initialArchitecture);
   const [receiptOpen,setReceiptOpen]=useState(false);
   const presentButton=useRef<HTMLButtonElement>(null),receiptButton=useRef<HTMLButtonElement>(null);
@@ -58,7 +60,7 @@ export function ArchitecturePage() {
     if(window.matchMedia('(max-width:980px)').matches) requestAnimationFrame(()=>spotlightPanel.current?.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}));
   };
   const nodeClass=(id:ArchitectureComponent)=>`${state.component===id?' is-selected':''}${state.presenting&&components[id].step!==state.step?' is-dimmed':''}`;
-  useEffect(()=>{const prior=document.title;document.title='Architecture | JEV Trading Terminal';return ()=>{document.title=prior;};},[]);
+  useEffect(()=>{const prior=document.title;document.title=`${label} Architecture | JEV Trading Terminal`;return ()=>{document.title=prior;};},[label]);
   useEffect(()=>{
     if(hadReceiptOpen.current&&!receiptOpen)receiptButton.current?.focus();
     hadReceiptOpen.current=receiptOpen;
@@ -75,12 +77,12 @@ export function ArchitecturePage() {
   return <div className={`arch-app${state.presenting?' arch-presenting':''}`}>
     <a className="arch-skip" href="#architecture-map">Skip to architecture</a>
     <header className="arch-header">
-      <a className="arch-brand" href="/" aria-label="BNB Chain JEV Trading Terminal"><span className="arch-chain"><img src={bnbLogo} alt="BNB Chain"/> <span>BNB CHAIN</span></span><span className="arch-brand-divider" aria-hidden="true"/><span className="arch-product"><TypeSafeLogo size={38}/><b>JEV</b><span>Trading Terminal</span></span></a>
-      <nav aria-label="Main navigation"><a href="/">Terminal</a><a href="/architecture" aria-current="page">Architecture</a><a className="arch-github" href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="View the public source repository"><img src={githubMark} alt=""/></a></nav>
+      <a className="arch-brand" href={terminalPath} aria-label="BNB Chain JEV Trading Terminal"><span className="arch-chain"><img src={bnbLogo} alt="BNB Chain"/> <span>BNB CHAIN</span></span><span className="arch-brand-divider" aria-hidden="true"/><span className="arch-product"><TypeSafeLogo size={38}/><b>JEV</b><span>Trading Terminal</span></span></a>
+      <nav aria-label="Main navigation"><a href={terminalPath}>Terminal</a><a href={architecturePath} aria-current="page">Architecture</a><a className="arch-github" href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="View the public source repository"><img src={githubMark} alt=""/></a></nav>
       <button ref={presentButton} className="arch-present" aria-pressed={state.presenting} onClick={()=>dispatch({type:state.presenting?'exit':'present'})}>{state.presenting?<X size={16}/>:<Play size={16} fill="currentColor"/>}{state.presenting?'Exit walkthrough':'Present walkthrough'}</button>
     </header>
     <main>
-      <section className="arch-hero" aria-labelledby="arch-title"><span className="arch-eyebrow">INSIDE THE TERMINAL</span><h1 id="arch-title">From new launch to informed action.</h1><div><p>BNB Agent Studio serves the assessment. JEV judges. Living Brain remembers.</p><small>{state.presenting?'Use ← → to present · Esc to exit':'System architecture · Paper execution only'}</small></div></section>
+      <section className="arch-hero" aria-labelledby="arch-title"><span className="arch-eyebrow">{label} · INSIDE THE TERMINAL</span><h1 id="arch-title">From new launch to informed action.</h1><div><p>BNB Agent Studio serves the assessment. JEV judges. {memoryName} remembers.</p><small>{state.presenting?'Use ← → to present · Esc to exit':'System architecture · Paper execution only'}</small></div></section>
       <nav className="arch-steps" aria-label="Decision journey">{steps.map((step,index)=><button key={step.label} aria-current={state.step===index?'step':undefined} onClick={()=>dispatch({type:'step',step:index})}><span className="arch-step-number">{String(index+1).padStart(2,'0')}</span><span><strong>{step.label}</strong><small>{step.description}</small></span></button>)}</nav>
       <div className="arch-workspace">
         <section id="architecture-map" className="arch-map" aria-labelledby="arch-map-title"><header><h2 id="arch-map-title">Explore the engine</h2><span>Select any component</span></header>
@@ -94,16 +96,16 @@ export function ArchitecturePage() {
             <div className={`arch-to-jev arch-connection${state.step===1?' is-active':''}`} aria-hidden="true"><span>Evidence +<br/>recalled context</span><i/><ArrowRight size={22}/></div>
             <div className={`arch-from-jev arch-connection${state.step===1?' is-active':''}`} aria-hidden="true"><span>Typed judgment</span><ArrowLeft size={22}/><i/></div>
             <button className={`arch-specialist arch-jev${nodeClass('jev')}`} onClick={()=>select('jev')} aria-label="Inspect JEV by TypeSafe" aria-pressed={state.component==='jev'}><span className="arch-specialist-heading"><TypeSafeLogo size={52}/><span><strong>JEV by TypeSafe</strong><small>Context-aware typed judgment</small></span></span><span className="arch-actions"><span>BUY</span><span>SELL</span><span>HOLD</span></span></button>
-            <button className={`arch-specialist arch-memory${nodeClass('memory')}`} onClick={()=>select('memory')} aria-label="Inspect Living Brain" aria-pressed={state.component==='memory'}><img src={brainLogo} alt="Living Brain"/><span><strong>Living Brain</strong><small>Recall prior episodes</small><small>Capture decisions + outcomes</small></span></button>
+            <button className={`arch-specialist arch-memory${nodeClass('memory')}`} onClick={()=>select('memory')} aria-label={`Inspect ${memoryName}`} aria-pressed={state.component==='memory'}><MemoryLogo/><span><strong>{memoryName}</strong><small>Recall prior episodes</small><small>Capture decisions + outcomes</small></span></button>
             <div className={`arch-recall arch-connection arch-memory-line${state.step===1||state.step===3?' is-active':''}`} aria-hidden="true"><span>Recall</span><ArrowLeft size={22}/><i/></div>
             <div className={`arch-to-paper arch-connection${state.step===2?' is-active':''}`} aria-hidden="true"><i/><span>Judgment + unsigned intent</span><ArrowDown size={22}/></div>
             <button className={`arch-paper${nodeClass('paper')}`} onClick={()=>select('paper')} aria-label="Inspect Paper policy and execution" aria-pressed={state.component==='paper'}><span className="arch-function-icon"><ShieldCheck size={29}/></span><span><strong>Paper policy + execution</strong><small>Code owns limits, sizing and fills</small></span></button>
             <div className={`arch-write arch-connection arch-memory-line${state.step===3?' is-active':''}`} aria-hidden="true"><ArrowUp size={22}/><span>Write episodes + follow-up outcomes</span><i/><small>Available to future assessments</small></div>
-            <p className="arch-mobile-flow">Fresh evidence and recalled episodes inform JEV. Its judgment passes through code-owned checks; recorded outcomes return to Living Brain for later recall.</p>
+            <p className="arch-mobile-flow">Fresh evidence and recalled episodes inform JEV. Its judgment passes through code-owned checks; recorded outcomes return to {memoryName} for later recall.</p>
           </div>
           <p className="arch-map-caption">“JEV proposes. Code gates execution. Memory preserves experience.”</p>
         </section>
-        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{(state.component==='gmgn'||state.component==='grok'||state.component==='geckoterminal'||state.component==='nodeops'||state.component==='nodereal')&&<BrandMark id={state.component} decorative/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
+        <aside ref={spotlightPanel} className="arch-spotlight" aria-label="Component spotlight"><div className="arch-spotlight-copy" aria-live="polite" aria-atomic="true"><span className="arch-eyebrow">COMPONENT SPOTLIGHT</span><h2>{state.component==='memory'&&<MemoryLogo size={28} className="arch-brand-mark"/>}{(state.component==='gmgn'||state.component==='grok'||state.component==='geckoterminal'||state.component==='nodeops'||state.component==='nodereal')&&<BrandMark id={state.component} decorative/>}{spotlight.name}</h2><p className="arch-tagline">{spotlight.tagline}</p><dl><div><dt>ROLE</dt><dd>{spotlight.role}</dd></div><div><dt>WHY IT MATTERS</dt><dd>{spotlight.advantage}</dd></div><div><dt>IN THIS DEMO</dt><dd>{spotlight.demo}</dd></div></dl>
           {state.component==='studio'&&<section className="arch-sdk-summary"><h3>SDK foundation</h3><p>Chain context and unsigned intents keep model judgment separate from execution.</p></section>}
           <p className="arch-component-note"><Info size={19}/><span>{spotlight.note}</span></p></div>
           {state.component==='geckoterminal'&&<p className="arch-data-attribution"><a href="https://www.geckoterminal.com" target="_blank" rel="noopener noreferrer">On-chain data provided by GeckoTerminal <ArrowUpRight size={14}/></a></p>}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Mem9Memory } from "./mem9.js";
 import type {
   Judgment,
   Memory,
@@ -144,14 +145,19 @@ export class Providers {
   private coinGecko: CoinGeckoTrades;
   readonly priceProvider:'GeckoTerminal'|'Bitquery';
   private xResearch: XResearchClient;
+  readonly memoryProvider: 'MEM9' | 'Living Brain';
+  private mem9?: Mem9Memory;
   constructor(
     private env: NodeJS.ProcessEnv = process.env,
     private fetchImpl: FetchImpl = fetch,
     private market = new GmgnMarketData(),
+    options: {memoryProvider?:'mem9'|'living-brain';coinGecko?:CoinGeckoTrades} = {},
   ) {
+    this.memoryProvider=options.memoryProvider==='mem9'?'MEM9':'Living Brain';
+    if(options.memoryProvider==='mem9')this.mem9=new Mem9Memory(env,fetchImpl);
     const selected=z.enum(['coingecko','bitquery']).parse(env.MARKET_PRICE_PROVIDER??(env.COINGECKO_DEMO_API_KEY?'coingecko':'bitquery'));
     this.priceProvider=selected==='coingecko'?'GeckoTerminal':'Bitquery';
-    this.coinGecko=new CoinGeckoTrades({key:env.COINGECKO_DEMO_API_KEY??'',fetchImpl});
+    this.coinGecko=options.coinGecko??new CoinGeckoTrades({key:env.COINGECKO_DEMO_API_KEY??'',fetchImpl});
     this.xResearch = new XResearchClient(env, fetchImpl);
     this.bitquery = new BitqueryTokens(
       env.BITQUERY_CLIENT_ID ?? "",
@@ -162,10 +168,8 @@ export class Providers {
       [this.priceProvider]: this.priceProvider==='GeckoTerminal'?["COINGECKO_DEMO_API_KEY"]:["BITQUERY_CLIENT_ID", "BITQUERY_CLIENT_SECRET"],
       Jev: ["OPENROUTER_API_KEY"],
       "Grok / X": ["OPENROUTER_API_KEY"],
-      "Living Brain": [
-        "LIVING_BRAIN_API_KEY",
-        "LIVING_BRAIN_SUBJECT_ID",
-        "LIVING_BRAIN_ID",
+      [this.memoryProvider]: this.mem9 ? ['MEM9_API_KEY'] : [
+        'LIVING_BRAIN_API_KEY', 'LIVING_BRAIN_SUBJECT_ID', 'LIVING_BRAIN_ID',
       ],
       NodeReal: ["NODEREAL_API_KEY"],
     })) {
@@ -322,7 +326,9 @@ export class Providers {
     };
   }
   async memories(pool: Pool, context?: ResearchInput): Promise<Memory[]> {
-    return this.track("Living Brain", async () => {
+    return this.track(this.memoryProvider, async () => {
+      const query = `BSC token ${pool.token} ${pool.symbol}: prior paper observation decisions HOLD entry exit outcomes; comparable Flap Four.meme post-graduation liquidity reversals, holder distribution, short-window flow and narrative contradictions. ${context ? 'Creator '+String(context.sections.find(s=>s.id==='Rcreator')?.facts.address??'unknown')+'; '+context.sections.filter(s=>s.availability!=='unavailable').map(s=>s.label).join(', ') : ''}`;
+      if(this.mem9)return this.mem9.search(query);
       const b = this.brain();
       return memorySchema
         .parse(
@@ -332,7 +338,7 @@ export class Providers {
               method: "POST",
               headers: b.headers,
               body: JSON.stringify({
-                query: `BSC token ${pool.token} ${pool.symbol}: prior paper observation decisions HOLD entry exit outcomes; comparable Flap Four.meme post-graduation liquidity reversals, holder distribution, short-window flow and narrative contradictions. ${context ? 'Creator '+String(context.sections.find(s=>s.id==='Rcreator')?.facts.address??'unknown')+'; '+context.sections.filter(s=>s.availability!=='unavailable').map(s=>s.label).join(', ') : ''}`,
+                query,
                 topK: 4,
                 minSimilarity: 0.45,
               }),
@@ -344,8 +350,10 @@ export class Providers {
         .map((x) => ({ ...x, summary: x.summary.slice(0, 1500) }));
     });
   }
+  captureIntent(episode:MemoryEpisode):CaptureReceipt|undefined {return this.mem9?.captureIntent(episode);}
   async captureEpisode(episode:MemoryEpisode):Promise<CaptureReceipt>{
-    return this.track('Living Brain',async()=>{
+    const receipt=await this.track(this.memoryProvider,async()=>{
+      if(this.mem9)return this.mem9.capture(episode);
       const b=this.brain();
       return captureReceiptSchema.parse(await json(`${b.url}/captures`,{method:'POST',headers:b.headers,body:JSON.stringify({
         kind:'note',bucket:'notes',label:`PAPER ${episode.kind} · ${episode.name.slice(0,80)}`,
@@ -353,14 +361,23 @@ export class Providers {
         content:JSON.stringify({episodeId:episode.id,kind:episode.kind,token:episode.token,createdAt:episode.createdAt,...episode.content}),
       })},this.fetchImpl));
     });
+    if(receipt.status==='unconfirmed')this.statuses.set(this.memoryProvider,{
+      name:this.memoryProvider,state:'error',checkedAt:Date.now(),detail:'Memory write unconfirmed; reconciling the saved episode reference.',
+    });
+    return receipt;
   }
   async captureStatuses(ids:string[]):Promise<CaptureReceipt[]>{
     if(!ids.length)return [];
+    if(this.mem9)return this.mem9.statuses(ids);
     const b=this.brain();const q=new URLSearchParams({ids:ids.slice(0,20).join(','),limit:'20',offset:'0'});
     const r=z.object({items:z.array(captureReceiptSchema)}).parse(await json(`${b.url}/sources?${q}`,{headers:b.headers},this.fetchImpl));
     return r.items.filter(r=>ids.includes(r.id));
   }
+  async verifyMemoryAccess() {
+    if(this.mem9)await this.track(this.memoryProvider,()=>this.mem9!.verify());
+  }
   async capture(decision: Decision): Promise<string> {
+    if(this.mem9)throw new Error('MEM9 capture requires a durable episode');
     const b = this.brain();
     // Shadow data must not return to the trading model indirectly through recall.
     const { supportingEvidence, supportingEvidenceAt, ...memoryDecision } = decision;

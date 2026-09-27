@@ -11,7 +11,9 @@
     "build": "tsc --noEmit && vite build",
     "start": "node --import tsx --env-file-if-exists=.env.local server/index.ts",
     "test": "vitest run",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "memory:check": "node --import tsx --env-file-if-exists=.env.local scripts/check-mem9.ts",
+    "check:repo": "node scripts/check-repository.mjs"
   },
   "dependencies": {
     "@bnbagent/sdk": "0.6.0",

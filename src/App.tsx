@@ -664,7 +664,7 @@ export function App() {
                     <p id={`evidence-M${i + 1}`}><b>Living Brain summary:</b> {m.summary}</p>
                     <small>
                       Page {short(m.pageId)} · relevance{" "}
-                      {m.similarity.toFixed(2)}
+                      {m.similarity?.toFixed(2) ?? 'Not provided'}
                     </small>
                     {decision.judgment?.assessments?.filter(a => a.kind === "memory" && a.referenceId === m.pageId).map(a => <AssessmentCard key={a.id} assessment={a} />)}
                   </details>

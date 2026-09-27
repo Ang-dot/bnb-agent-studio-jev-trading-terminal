@@ -1,4 +1,6 @@
 import type { Decision } from './types.js';
+import { frontendRoute, type FrontendEdition } from './frontend-route.js';
+import { apiPath } from './api-path.js';
 
 export const REPOSITORY_URL = 'https://github.com/Ang-dot/bnb-agent-studio-jev-trading-terminal';
 export const architectureComponents = {
@@ -14,6 +16,18 @@ export const architectureComponents = {
   nodereal: {name:'NodeReal', tagline:'A read-only window into BNB Chain.', role:'Provides RPC access for an explicit on-demand chain connectivity check.', advantage:'Offers a chain-level diagnostic separate from the market-data and model providers.', demo:'An operator-only read check is wired. It is not a required request in every JEV assessment.', note:'NodeReal is not presented as the launch discovery source, graduation verifier or an enabled live trading service.', step:0},
 } as const;
 export type ArchitectureComponent = keyof typeof architectureComponents;
+export function architectureForEdition(edition: FrontendEdition) {
+  if (edition === 'token2049') return architectureComponents;
+  return {
+    ...architectureComponents,
+    memory: {
+      ...architectureComponents.memory,
+      name: 'MEM9',
+      demo: 'KBW uses an isolated journal and Mem9 app scope. Explicit episodes are stored with confirmed memory IDs and recalled through Mem9 search.',
+      note: 'Direct storage and search use Mem9’s API. Ambiguous writes are reconciled by episode reference. Relevance scores are not outcome confidence or proof of better returns.',
+    },
+  };
+}
 export const architectureSteps: {label:string;description:string;component:ArchitectureComponent}[] = [
   {label:'Observe',description:'Find opportunities in real time',component:'gmgn'},
   {label:'Assess',description:'Turn evidence into a judgment',component:'studio'},
@@ -29,11 +43,11 @@ export function architectureReducer(state:ArchitectureState,action:Action):Archi
   const step=action.type==='present'?0:action.type==='step'?Math.max(0,Math.min(3,action.step)):Math.max(0,Math.min(3,state.step+(action.type==='next'?1:-1)));
   return {component:architectureSteps[step].component,step,presenting:action.type==='present'||state.presenting};
 }
-export const pageForPath=(path:string)=>path.replace(/\/+$/,'')==='/architecture'?'architecture':'terminal';
+export const pageForPath=(path:string)=>frontendRoute(path).page;
 
 // Explicit visitor action only: no polling, provider invocation or operator API.
 export async function loadLatestReceipt(fetchImpl:typeof fetch=fetch,signal?:AbortSignal):Promise<Decision|null> {
-  const response=await fetchImpl('/api/state',{method:'GET',cache:'no-store',signal});
+  const response=await fetchImpl(apiPath('/api/state'),{method:'GET',cache:'no-store',signal});
   if(!response.ok)throw new Error('Recorded assessments are temporarily unavailable.');
   const data=await response.json();
   if(!Array.isArray(data.decisions))throw new Error('Recorded assessments are temporarily unavailable.');

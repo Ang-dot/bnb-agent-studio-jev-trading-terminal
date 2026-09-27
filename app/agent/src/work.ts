@@ -28,6 +28,7 @@ export function createAssessmentWork(deps: {
 }): AssessmentWork {
   return async (job, guard) => {
     const { providers, store } = deps, pool = job.pool;
+    const memoryProvider = providers.memoryProvider ?? 'Living Brain';
     const startedAt = Date.now(), started = performance.now(), stages: AssessmentStage[] = [];
     let stage = 'Provider configuration';
     const decision: Decision = {
@@ -48,7 +49,7 @@ export function createAssessmentWork(deps: {
     };
     try {
       await guard.assertActive();
-      const missing = [providers.priceProvider, 'Jev', 'Living Brain', 'Grok / X'].filter(name => providers.statuses.get(name)?.state === 'missing');
+      const missing = [providers.priceProvider, 'Jev', memoryProvider, 'Grok / X'].filter(name => providers.statuses.get(name)?.state === 'missing');
       if (missing.length) {
         decision.reasons = [`Connect ${missing.join(', ')} to run Jev + memory. No model call or paper fill was made.`];
         return finish('skipped');
@@ -84,12 +85,12 @@ export function createAssessmentWork(deps: {
           }
         } catch { /* Optional archived research; absence is never fabricated. */ }
       });
-      decision.memories = await run('Living Brain', async () => {
+      decision.memories = await run(memoryProvider, async () => {
         const memories = decision.researchInput ? await providers.memories(fresh, decision.researchInput) : await providers.memories(fresh);
         decision.memoryReadAt = Date.now();
         return deps.annotate ? deps.annotate(memories, decision.memoryReadAt) : memories;
       });
-      decision.memoryStatus = decision.memories.length ? `${decision.memories.length} active pages retrieved` : 'Connected · cold start (no relevant memories)';
+      decision.memoryStatus = decision.memories.length ? `${decision.memories.length} active memories retrieved from ${memoryProvider}` : 'Connected · cold start (no relevant memories)';
       decision.judgment = await run('JEV', () => decision.researchInput
         ? providers.judge(decision.snapshot!, decision.memories, decision.research!, decision.researchInput)
         : providers.judge(decision.snapshot!, decision.memories, decision.research!));

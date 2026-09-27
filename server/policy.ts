@@ -46,7 +46,7 @@ export function evaluatePolicy(c: PolicyContext): {action: Action; mode:"paper";
       check("Operator approval",c.approved,"Approved pool or freshly qualified launch in an armed paper session."),
       check("Valid market data",[s.liquidityUsd,s.volume24h,s.change1h,s.buyCount,s.sellCount].every(Number.isFinite),"Missing entry evidence is not a zero."),
       check("Liquidity",s.liquidityUsd>=p.minLiquidityUsd,"Paper entry floor: $20,000 pool liquidity."),
-      check("Memory retrieval",c.memoryReady,"Living Brain must respond; no relevant memories is a valid cold start."),
+      check("Memory retrieval",c.memoryReady,"The configured memory provider must respond; no relevant memories is a valid cold start."),
       check("X research freshness",!!c.research && ["ready","no_results"].includes(c.research.status) && c.research.token===s.token &&
         c.research.searchCalls>0 && c.research.window.to<=c.research.collectedAt && c.research.collectedAt<=c.now &&
         c.research.window.to<=c.now && c.now-c.research.window.to<=300000 && c.research.expiresAt>c.now,"Contract-specific search receipt must be within five minutes."),
