@@ -26,6 +26,8 @@ Supabase Postgres persists the ledger, decisions, memory journal, research archi
 
 Keep `WORKER_ENABLED=false` during provisioning. Worker startup and paper arming are separate. Cloud ownership leases are renewed and writes are fenced; acquiring ownership or restarting pauses paper execution.
 
+For a KBW-only worker, set `WORKER_EDITIONS=kbw` and `WORKER_ENABLED=true` on Production. Deploy the edition-selector code before enabling the worker; older releases ignore `WORKER_EDITIONS`. Verify KBW health reports `workerActive: true` and TOKEN2049 reports `workerActive: false`. Paper execution still boots paused.
+
 ## Fresh Supabase start
 
 This cutover starts with an empty, paused ledger. The previous TiDB journal is not imported; retain the old instance separately if historical records are needed later. Verify the new private schema, an empty evidence archive, and denied `anon`/`authenticated` schema access before enabling the worker. Enabling the worker does not arm paper execution.

@@ -14,6 +14,7 @@ import { MonitorService } from './monitor.js';
 
 export async function createEditionRuntime(options:{
   edition:FrontendEdition;store:Store;providers:Providers;worker:WorkerRuntime;
+  active:()=>boolean;
   launches:LaunchFeed;graduations:GraduationVerifier;
   evidence:(token:string,at:number)=>Promise<SupportingEvidence|undefined>;
   refreshEvidence:(token:string)=>Promise<unknown>;
@@ -27,15 +28,17 @@ export async function createEditionRuntime(options:{
     providers,store,evidence:options.evidence,annotate:(memories,at)=>learning.annotate(memories,at),
   })});
   const engine=new Engine(store,providers,{assess:async(...args)=>{
+    if(!options.active())throw new Error('Edition worker is disabled');
     if(!options.reserveAssessment())throw new Error('Shared assessment budget exhausted');
     return studio.runner.assess(...args);
   }},learning);
   const monitor=await new MonitorService({
     memoryProvider:providers.memoryProvider,
     feed:()=>launches.state,activity:()=>launches.activity(),verify:launch=>graduations.verify(launch,true),
-    available:async()=>worker.active&&!engine.busy&&!(await store.read()).halted&&!options.replayBusy()&&
+    available:async()=>options.active()&&!engine.busy&&!(await store.read()).halted&&!options.replayBusy()&&
       providers.statuses.get(providers.memoryProvider)?.state!=='missing',
     assess:async(launch,verification,context,active)=>{
+      if(!options.active())throw new Error('Edition worker is disabled');
       void worker.run(()=>options.refreshEvidence(launch.address));
       const pool=await providers.pool(verification.pool!,launch.address);
       if(pool.token.toLowerCase()!==launch.address||!active())throw new Error('Monitoring evidence unavailable');

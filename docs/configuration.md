@@ -18,6 +18,8 @@ Model defaults are in `server/providers.ts`, `server/research.ts` and `server/re
 
 **Local caution:** `WORKER_ENABLED=false` gates Supabase-backed worker startup. SQLite discovery can run while paper fills are paused. Starting the app is not a credential-verification-only command. Tests and builds do not require live credentials.
 
+`WORKER_EDITIONS` selects background runtimes independently of paper arming. Use `WORKER_ENABLED=true` and `WORKER_EDITIONS=kbw` to run only KBW discovery, assessments and Mem9 capture in cloud mode. TOKEN2049 keeps its recorded history, but its monitor, memory outbox, inventory/exit loops and mutation endpoints remain inactive. Shared market discovery remains visible in both frontends. Omission preserves both editions; invalid or empty lists fail startup. Each edition's health/state reports its own `workerActive` value.
+
 Cloud additionally needs `PUBLIC_ORIGIN`, `ORIGIN_SECRET` and Access settings. Pages needs only `BACKEND_ORIGIN` and `ORIGIN_SECRET`; all model/database/GMGN credentials belong on the backend. See [deployment](hosting-plan.md).
 
 ## Mem9 for KBW

@@ -238,6 +238,7 @@ export interface AgentState {
 export interface TerminalState extends AgentState {
   edition?: 'kbw' | 'token2049';
   memoryProvider?: 'MEM9' | 'Living Brain';
+  workerActive?: boolean;
   assessmentService?: AssessmentServiceInfo;
   access?: { operator: boolean };
   exitError?: string | null;

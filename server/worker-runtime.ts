@@ -1,3 +1,12 @@
+import type { FrontendEdition } from '../src/frontend-route.js';
+
+export function configuredWorkerEditions(value = 'kbw,token2049'): Set<FrontendEdition> {
+  const editions=value.split(',').map(edition=>edition.trim());
+  if(!editions.length||editions.some(edition=>edition!=='kbw'&&edition!=='token2049'))
+    throw new Error('WORKER_EDITIONS must contain kbw and/or token2049');
+  return new Set(editions as FrontendEdition[]);
+}
+
 export class WorkerRuntime {
   active=false;
   private closing=false;

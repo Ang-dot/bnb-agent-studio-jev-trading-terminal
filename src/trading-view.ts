@@ -14,6 +14,7 @@ export function decisionAction(d: Decision): { label: string; tone: string; sour
 export function currentActivity(state: TerminalState | null, monitor: MonitorState | null, now: number) {
   if (!state) return { title: "Connecting to terminal", detail: "Loading the current paper session", active: false };
   if (state.halted) return { title: "Safety lock active", detail: "Execution is disabled", active: false };
+  if (state.workerActive === false) return { title: "Worker inactive for this edition", detail: "Recorded history remains available", active: false };
   if (!state.running) return { title: "Paper session not armed", detail: "Launch discovery remains available", active: false };
   const working = monitor?.items.find(i => i.status === "assessing" || i.status === "verifying");
   if (state.busy || monitor?.busy) return { title: working ? `Assessing ${working.symbol}` : "Assessing market context", detail: working?.detail || "An evaluation is in progress", active: true };

@@ -18,7 +18,7 @@ import { paperControl } from "./control.js";
 import { EvidenceArchive, EvidenceCollector } from "./enrichment.js";
 import { CloudStore } from './cloud-store.js';
 import { hostedSettings, cloudAccess, publicState, SharedReadCache } from './hosting.js';
-import { WorkerRuntime } from './worker-runtime.js';
+import { WorkerRuntime, configuredWorkerEditions } from './worker-runtime.js';
 import { assessmentFetch } from './assessment-signal.js';
 
 const port = z.coerce
@@ -28,27 +28,34 @@ const port = z.coerce
   .max(65535)
   .parse(process.env.PORT || 8787);
 const hosting = hostedSettings(process.env);
+const enabledEditions=configuredWorkerEditions(process.env.WORKER_EDITIONS);
 const cloud = process.env.SUPABASE_DATABASE_URL ? await new CloudStore(process.env.SUPABASE_DATABASE_URL).init().catch(()=>{throw new Error('Cloud storage unavailable');}) : null;
 const stores = {token2049:cloud ?? new SqliteStore(),kbw:cloud?.kbwStore() ?? new SqliteStore('.data/kbw/terminal.sqlite')};
 const worker = new WorkerRuntime(cloud ? ()=>cloud.assertLease() : undefined);
 const wantsWorker = !cloud || process.env.WORKER_ENABLED === 'true';
+const editionWorkerActive=(edition:FrontendEdition)=>worker.active&&enabledEditions.has(edition);
 const publicReads = new SharedReadCache();
 if (!cloud) for(const store of Object.values(stores)) await store.mutate(s=>{s.running=false;});
 const guardedFetch: typeof fetch = async (input,init) => { await worker.assertActive();return assessmentFetch(input,init); };
+const editionFetch=(edition:FrontendEdition):typeof fetch=>async(input,init)=>{
+  if(!editionWorkerActive(edition))throw new Error('Edition worker is disabled');
+  return guardedFetch(input,init);
+};
 // Market prices and their cache/budget are shared; decisions and memory are isolated.
 const coinGecko = new CoinGeckoTrades({key:process.env.COINGECKO_DEMO_API_KEY??'',fetchImpl:guardedFetch});
 const providerSets = {
-  token2049:new Providers(process.env,guardedFetch,undefined,{memoryProvider:'living-brain',coinGecko}),
-  kbw:new Providers(process.env,guardedFetch,undefined,{memoryProvider:'mem9',coinGecko}),
+  token2049:new Providers(process.env,editionFetch('token2049'),undefined,{memoryProvider:'living-brain',coinGecko}),
+  kbw:new Providers(process.env,editionFetch('kbw'),undefined,{memoryProvider:'mem9',coinGecko}),
 };
+const sharedProviders=providerSets[[...enabledEditions][0]];
 const evidenceArchive = cloud ?? new EvidenceArchive();
 const evidenceCollector = new EvidenceCollector(evidenceArchive);
 const launches = new LaunchFeed();
 const graduations = new GraduationVerifier(launch =>
-  readGraduation(launch, token => providerSets.token2049.poolForToken(token)),
+  readGraduation(launch, token => sharedProviders.poolForToken(token)),
 );
 const replays = await new ReplayService(launches, graduations, (input) =>
-  providerSets.token2049.track("Jev", () => judgeReplay(input, process.env, guardedFetch)), cloud?.record('replay'),
+  sharedProviders.track("Jev", () => judgeReplay(input, process.env, guardedFetch)), cloud?.record('replay'),
 ).init();
 let assessmentAttempts:number[]=[];
 const reserveAssessment=()=>{
@@ -59,12 +66,14 @@ const reserveAssessment=()=>{
 const runtimes = {} as Record<FrontendEdition,EditionRuntime>;
 for(const edition of ['token2049','kbw'] as const)runtimes[edition]=await createEditionRuntime({
   edition,store:stores[edition],providers:providerSets[edition],worker,launches,graduations,
+  active:()=>editionWorkerActive(edition),
   evidence:async(token,at)=>evidenceArchive.latest(token,at),refreshEvidence:token=>evidenceCollector.refresh(token),
   replayBusy:()=>replays.run?.status==='running',reserveAssessment,
   monitorRecord:cloud?.record(edition==='kbw'?'kbw-monitor':'monitor') ?? (edition==='kbw'?'.data/kbw/monitor.json':'.data/monitor.json'),
 });
 const runtimeFor=(res:express.Response)=>res.locals.runtime as EditionRuntime;
-const tickMonitors=async()=>{for(const runtime of Object.values(runtimes))await runtime.monitor.tick();};
+const activeRuntimes=()=>Object.values(runtimes).filter(runtime=>enabledEditions.has(runtime.edition));
+const tickMonitors=async()=>{for(const runtime of activeRuntimes())await runtime.monitor.tick();};
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb" }));
@@ -95,21 +104,26 @@ app.use((req,res,next)=>{
 });
 app.use('/api', async(req,res,next)=>{
   if (!['GET','HEAD'].includes(req.method)) {
+    if(!enabledEditions.has(runtimeFor(res).edition))
+      return void res.status(503).json({error:'Worker is disabled for this edition; no action was taken'});
     try {await worker.assertActive();} catch {return void res.status(503).json({error:'Worker is not active; no action was taken'});}
   }
   next();
 });
 app.get("/api/health", (_req, res) => {
   const {edition,providers,studio}=runtimeFor(res);
-  res.json({ok:true,mode:'paper',liveExecution:false,workerActive:worker.active,hosting:hosting?'cloud':'local',edition,memoryProvider:providers.memoryProvider,assessmentService:studio.info()});
+  res.json({ok:true,mode:'paper',liveExecution:false,workerActive:editionWorkerActive(edition),sharedWorkerActive:worker.active,workerEditions:[...enabledEditions],hosting:hosting?'cloud':'local',edition,memoryProvider:providers.memoryProvider,assessmentService:studio.info()});
 });
 app.get("/api/state", async (_req, res) => {
   const {engine,studio,edition,providers}=runtimeFor(res);
-  const state = {...await engine.state(),assessmentService:studio.info(),edition,memoryProvider:providers.memoryProvider};
+  const state = {...await engine.state(),assessmentService:studio.info(),edition,memoryProvider:providers.memoryProvider,workerActive:editionWorkerActive(edition)};
   res.json(hosting && !res.locals.operator ? publicState(state) : {...state,access:{operator:true}});
 });
 app.get("/api/launches", (_req, res) => res.json(launches.state));
-app.get("/api/monitor", (_req, res) => res.json(runtimeFor(res).monitor.state));
+app.get("/api/monitor", (_req, res) => {
+  const {edition,monitor}=runtimeFor(res);
+  res.json({...monitor.state,enabled:editionWorkerActive(edition)&&monitor.state.enabled});
+});
 app.get("/api/evidence/:token", async (req, res) => {
   const token = z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(req.params.token).toLowerCase();
   // Read archived observations only: opening an unqualified launch never starts paid queries.
@@ -378,7 +392,9 @@ async function startWorker(){
       coinGecko.useBudget(cloud.record('coingecko-usage'));
     }
     worker.enable();
-    for(const {engine} of Object.values(runtimes))void worker.run(()=>engine.discover());
+    for(const {engine,providers} of activeRuntimes())void worker.run(async()=>{
+      await providers.verifyMemoryAccess();await engine.discover();
+    });
     void worker.run(async()=>{await launches.refresh();if(cloud)await cloud.record('launches').write(JSON.stringify(launches.state));await tickMonitors();});
   } catch { console.error('Worker startup unavailable; no session armed'); }
   finally {starting=false;}
@@ -393,14 +409,14 @@ const launchTimer = setInterval(
   30000,
 );
 const timer = setInterval(() => void worker.run(async () => {
-  for(const {engine,store} of Object.values(runtimes))try {
+  for(const {engine,store} of activeRuntimes())try {
     await engine.discover();
     const state=await store.read();
     if(state.running&&!state.halted&&!engine.busy&&state.ledger.positions.length)await engine.cycle(undefined,undefined,true);
   } catch {await store.mutate(s=>{s.running=false;});}
 }),60000);
-const exitTimer=setInterval(()=>void worker.run(async()=>{await Promise.allSettled(Object.values(runtimes).map(({engine})=>engine.checkExits()));}),15000);
-const memoryTimer=setInterval(()=>void worker.run(async()=>{await Promise.allSettled(Object.values(runtimes).map(({learning,providers})=>
+const exitTimer=setInterval(()=>void worker.run(async()=>{await Promise.allSettled(activeRuntimes().map(({engine})=>engine.checkExits()));}),15000);
+const memoryTimer=setInterval(()=>void worker.run(async()=>{await Promise.allSettled(activeRuntimes().map(({learning,providers})=>
   providers.statuses.get(providers.memoryProvider)?.state!=='missing'?learning.tick():Promise.resolve()));}),10000);
 for (const signal of ["SIGINT", "SIGTERM"] as const)
   process.on(signal, () => {
