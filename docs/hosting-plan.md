@@ -6,6 +6,8 @@ The reference layout uses Cloudflare Pages for the browser, NodeOps for the alwa
 
 Build with `npm ci && npm run build`, then publish `dist/` as a Cloudflare Pages project. `public/_worker.js` becomes the Pages advanced-mode worker. Configure server-side bindings `BACKEND_ORIGIN` and `ORIGIN_SECRET`; never put these in `VITE_` variables.
 
+The existing Pages project uses Direct Upload. `.github/workflows/cloudflare-pages.yml` checks pull requests and deploys `dist/` to that project after a push to `main` or a manual run on `main`. Set repository secrets `CLOUDFLARE_ACCOUNT_ID` to the Cloudflare account ID and `CLOUDFLARE_API_TOKEN` to an account-scoped token with **Cloudflare Pages: Edit** permission. Keep `BACKEND_ORIGIN`, `ORIGIN_SECRET`, and access settings as protected Pages runtime bindings, not GitHub Actions variables. This workflow deploys the frontend only; NodeOps backend promotion remains separate.
+
 The current proxy accepts HTTPS NodeOps origins ending in `.nodeops.app`. A different host or custom domain needs an explicit, tested allowlist change.
 
 - Public `/` and `/api/*` routes are read-only.
@@ -50,6 +52,6 @@ Skip migration for a fresh account. Otherwise:
 - Health reports paper mode and `liveExecution: false`.
 - Exactly one worker owns the lease. After explicit operator arming, timestamps advance without an open browser.
 - Public responses/assets/logs contain no credentials or private brain context.
-- Check GitHub build and promotion behavior before pushing: documentation commits can trigger connected deployments too.
+- Pushing to `main`, including documentation changes, rebuilds and deploys the Pages frontend. Pull requests run checks without production credentials.
 
-Do not deploy, migrate or arm trading in CI. Provider/storage failures must not generate synthetic fills. This guide is not an uptime, security or profitability guarantee.
+Do not deploy the NodeOps backend, migrate data or arm trading in CI. Provider/storage failures must not generate synthetic fills. This guide is not an uptime, security or profitability guarantee.
