@@ -6,7 +6,7 @@ The reference layout uses Cloudflare Pages for the browser, NodeOps for the alwa
 
 Build with `npm ci && npm run build`, then publish `dist/` as a Cloudflare Pages project. `public/_worker.js` becomes the Pages advanced-mode worker. Configure server-side bindings `BACKEND_ORIGIN` and `ORIGIN_SECRET`; never put these in `VITE_` variables.
 
-For Git-connected Pages builds, select the `main` branch, use `npm ci && npm run build` as the build command, publish `dist/`, and leave the root directory blank. `.node-version` pins the build runtime to Node 22. GitHub Actions runs tests and the build on pull requests and `main` pushes; Cloudflare Pages publishes the frontend. Keep `BACKEND_ORIGIN`, `ORIGIN_SECRET`, and access settings as protected Pages runtime bindings. NodeOps backend promotion remains separate.
+For Git-connected Pages builds, select the `main` branch, use `npm run build` as the build command, publish `dist/`, and leave the root directory blank. Cloudflare installs dependencies before running the build command. `.node-version` pins the build runtime to Node 22. GitHub Actions runs tests and the build on pull requests and `main` pushes; Cloudflare Pages publishes the frontend. Keep `BACKEND_ORIGIN`, `ORIGIN_SECRET`, and access settings as protected Pages runtime bindings. NodeOps backend promotion remains separate.
 
 The current proxy accepts HTTPS NodeOps origins ending in `.nodeops.app`. A different host or custom domain needs an explicit, tested allowlist change.
 
