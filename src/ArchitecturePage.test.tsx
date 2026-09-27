@@ -22,7 +22,7 @@ describe('architecture presentation', () => {
     expect(html).toContain('alt="GMGN"');
     expect(html).toContain('alt="Grok"');
     expect(html).toContain('alt="NodeOps"');
-    expect(html).toContain('aria-label="Supabase"');
+    expect(html).not.toContain('Supabase');
     expect(html).toContain('alt="NodeReal"');
     expect(html).not.toContain('Bitquery');
     expect(html).not.toContain('CoinGecko');
@@ -41,7 +41,7 @@ describe('architecture presentation', () => {
     expect(architectureReducer(initialArchitecture, {type:'select',component:'sdk'}).component).toBe('sdk');
   });
   it('gives every visible component a role, advantage and actual integration boundary', () => {
-    expect(Object.keys(architectureComponents)).toHaveLength(11);
+    expect(Object.keys(architectureComponents)).toHaveLength(10);
     for (const c of Object.values(architectureComponents)) {
       expect(c.role.length).toBeGreaterThan(30);
       expect(c.advantage.length).toBeGreaterThan(30);
