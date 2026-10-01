@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { Engine } from "./engine.js";
+import { MonitorService } from './monitor.js';
+import type { Launch, LaunchFeedState } from '../src/launches.js';
 import { Providers } from "./providers.js";
 import { SqliteStore } from "./store.js";
 import type { Pool, Snapshot, Judgment, XResearch } from "../src/types.js";
@@ -318,6 +320,68 @@ describe("autonomous paper loop with mocked providers", () => {
     expect((await store.read()).ledger.fills).toHaveLength(0);
     expect(providers.capture).not.toHaveBeenCalled();
     store.close();
+  });
+  it.each([100_000, 300_001])("runs JEV after slow research only inside the five-minute window (%i ms), without a stale-attention fill", async delay => {
+    const at = Date.now();
+    let now = at;
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const { engine, store, providers, research } = setup();
+    try {
+      const snapshot = await providers.snapshot(pool);
+      vi.mocked(providers.snapshot).mockImplementation(async () => ({ ...snapshot,
+        observedAt: now, marketAt: now - 1000, candleId: `fixture:${now}`,
+        entrySetup: { ...snapshot.entrySetup!, observedAt: now },
+      }));
+      vi.mocked(providers.research).mockImplementation(async () => { now += delay; return research; });
+      await store.mutate(s => { s.running = true; s.approvedPools = [pool.address]; });
+      const launch: Launch = { id: pool.token, address: pool.token, symbol: pool.symbol, name: pool.name,
+        platform: 'flap', stage: 'graduated_reported', createdAt: at - 1000, firstSeenAt: at,
+        reportedGraduatedAt: at - 1000, observedAt: at, liquidityUsd: 20_000, holders: 50, riskFlags: [],
+        priceUsd: 1, marketCapUsd: 20_000, volume24h: 20_000, progress: 100, top10: null, logo: null, quote: null,
+      };
+      const feed = { enabled: true, launches: [launch] } as LaunchFeedState;
+      const monitor = new MonitorService({
+        feed: () => feed, now: () => now, available: async () => true,
+        activity: async () => [{ token: pool.token, observedAt: at, volume5mUsd: 2000,
+          swaps5m: 20, buys5m: 15, sells5m: 5, riskFlags: [] }],
+        verify: async () => ({ token: pool.token, status: 'gmgn_reported', pool: pool.address, checkedAt: at, detail: 'fixture' }),
+        assess: async (_launch, _verification, context, guard) =>
+          (await engine.cycle(pool.address, { context, ...guard, paper: true }))[0],
+      }, null);
+      await monitor.tick();
+      const state = await store.read(), decision = state.decisions[0];
+      expect(state.ledger.fills).toHaveLength(0);
+      if (delay < 300_000) {
+        expect(providers.memories).toHaveBeenCalledOnce();
+        expect(providers.judge).toHaveBeenCalledOnce();
+        expect(decision).toMatchObject({ status: 'held', judgment: { action: 'buy' } });
+        expect(decision.reasons).toContain('Paper session changed or attention expired during assessment; no fill.');
+        expect(monitor.state.items[0].status).toBe('monitoring');
+      } else {
+        expect(providers.judge).not.toHaveBeenCalled();
+        expect(decision.status).toBe('not_evaluated');
+        expect(decision.reasons[0]).toContain('5-minute assessment window');
+      }
+    } finally { store.close(); clock.mockRestore(); }
+  });
+  it.each(['pause', 'stop'] as const)("records the specific %s reason even with the extended assessment window", async action => {
+    const { engine, store, providers, research } = setup();
+    let blocked: string | null = null;
+    try {
+      vi.mocked(providers.research).mockImplementation(async () => {
+        if (action === 'stop') await store.mutate(s => { s.halted = true; });
+        else blocked = 'JEV assessment cancelled: monitoring was paused.';
+        return research;
+      });
+      await engine.cycle(pool.address, { context: { kind: 'auto-monitor' } as any,
+        active: () => true, assessmentBlocker: () => blocked, paper: true });
+      expect(providers.judge).not.toHaveBeenCalled();
+      const state = await store.read();
+      expect(state.ledger.fills).toHaveLength(0);
+      expect(state.decisions[0].reasons).toEqual([action === 'stop'
+        ? 'JEV assessment cancelled: safety stop is active.'
+        : 'JEV assessment cancelled: monitoring was paused.']);
+    } finally { store.close(); }
   });
   it("a monitoring pause during research prevents the next model call", async () => {
     const { engine, store, providers, research } = setup();

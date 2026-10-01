@@ -36,6 +36,17 @@ describe("automatic attention gate", () => {
     expect(screenLaunch({...launch,stage,createdAt:now-60000,reportedGraduatedAt:null},activity,now).eligible).toBe(true);
     expect(screenLaunch({...launch,stage,createdAt:null,reportedGraduatedAt:null},activity,now).eligible).toBe(false);
   });
+  it("accepts older observations only with the explicit assessment window", () => {
+    const older = { ...launch, observedAt: now - 100_000 };
+    const oldActivity = { ...activity, observedAt: now - 100_000 };
+    expect(screenLaunch(older, oldActivity, now).eligible).toBe(false);
+    expect(screenLaunch(older, oldActivity, now, WATCH_POLICY.assessmentMaxAgeMs).eligible).toBe(true);
+    for (const observedAt of [now - 300_001, now + 1, NaN]) {
+      expect(screenLaunch({ ...older, observedAt }, oldActivity, now, WATCH_POLICY.assessmentMaxAgeMs).eligible).toBe(false);
+      expect(screenLaunch(older, { ...oldActivity, observedAt }, now, WATCH_POLICY.assessmentMaxAgeMs).eligible).toBe(false);
+    }
+    expect(screenLaunch(older, undefined, now, WATCH_POLICY.assessmentMaxAgeMs).eligible).toBe(false);
+  });
   it("keeps stale/future, missing and low-activity inputs out", () => {
     for (const change of [
       { stage: "bonding" },

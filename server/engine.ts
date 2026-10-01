@@ -8,9 +8,11 @@ import { proposedSwap, sdkInfo } from "./bnb.js";
 import type { MonitorTrigger } from "../src/monitoring.js";
 import type { MemoryLoop } from './memory-loop.js';
 import type { AssessmentRunner } from '../app/agent/src/assessment.js';
+import { AssessmentBlockedError } from './assessment-signal.js';
 interface Observation {
   context: MonitorTrigger;
   active: () => boolean;
+  assessmentBlocker?: () => string | null;
   paper?: boolean;
 }
 export const liveBlockers = [
@@ -109,13 +111,13 @@ export class Engine {
     const session = (await this.store.read()).paperSession;
     let stage = "Agent Studio";
     const assertActive = async () => {
-      if (
-        observation &&
-        (!observation.active() || (await this.store.read()).halted)
-      )
-        throw new Error(
-          "Monitoring paused or evidence expired before JEV; no new model call.",
-        );
+      if (!observation) return;
+      if ((await this.store.read()).halted)
+        throw new AssessmentBlockedError("JEV assessment cancelled: safety stop is active.");
+      const blocked = observation.assessmentBlocker
+        ? observation.assessmentBlocker()
+        : observation.active() ? null : "JEV assessment cancelled: monitoring is inactive or evidence no longer qualifies.";
+      if (blocked) throw new AssessmentBlockedError(blocked);
     };
     let decision: Decision = {
       id: randomUUID(),
@@ -219,9 +221,7 @@ export class Engine {
       decision.status = "not_evaluated";
       decision.action = "hold";
       decision.reasons = [
-        error instanceof Error &&
-        error.message ===
-          "Monitoring paused or evidence expired before JEV; no new model call."
+        error instanceof AssessmentBlockedError
           ? error.message
           : stage + " request or response validation failed. No fill; retry after fresh evidence arrives.",
       ];

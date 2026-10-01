@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
+import { AssessmentBlockedError } from './assessment-signal.js';
 import type { JsonPersistence } from './cloud-store.js';
 import type { Launch, LaunchFeedState, Graduation } from "../src/launches.js";
 import type { Decision } from "../src/types.js";
@@ -12,6 +13,12 @@ import {
   type MonitorState,
   type MonitorTrigger,
 } from "../src/monitoring.js";
+export interface MonitorAssessmentGuard {
+  /** Original 90-second attention checks still govern paper execution. */
+  active: () => boolean;
+  /** An admitted assessment can continue with observations up to five minutes old. */
+  assessmentBlocker: () => string | null;
+}
 interface Dependencies {
   feed: () => LaunchFeedState;
   activity: () => Promise<LaunchActivity[]>;
@@ -20,7 +27,7 @@ interface Dependencies {
     launch: Launch,
     verification: Graduation,
     trigger: MonitorTrigger,
-    active: () => boolean,
+    guard: MonitorAssessmentGuard,
   ) => Promise<Decision | undefined>;
   available: () => Promise<boolean>;
   now?: () => number;
@@ -249,7 +256,7 @@ export class MonitorService {
         !verification.pool ||
         verification.token !== item.token ||
         verification.checkedAt > this.now() ||
-        this.now() - verification.checkedAt > 90000
+        this.now() - verification.checkedAt > WATCH_POLICY.maxAgeMs
       ) {
         item.status = "blocked";
         item.detail = verification.status === "gmgn_reported" && !verification.pool
@@ -257,6 +264,22 @@ export class MonitorService {
           : "Fresh supported launch market required; no JEV call.";
         return;
       }
+      const assessmentBlocker = (): string | null => {
+        if (!this.state.enabled) return "JEV assessment cancelled: monitoring was paused.";
+        if (!this.deps.feed().enabled) return "JEV assessment cancelled: launch discovery was paused.";
+        if (this.generation !== generation) return "JEV assessment cancelled: monitoring settings changed during assessment.";
+        const latest = current();
+        if (!latest) return "JEV assessment cancelled: token is no longer in the launch feed.";
+        const failure = screenLaunch(latest, lookup.get(item.token), this.now(), WATCH_POLICY.assessmentMaxAgeMs)
+          .checks.find(check => !check.pass);
+        if (failure?.label === "Fresh feeds")
+          return "JEV assessment cancelled: launch or activity evidence exceeded the 5-minute assessment window or has an invalid timestamp.";
+        if (failure) return `JEV assessment cancelled: token no longer passes the ${failure.label} check.`;
+        if (!Number.isFinite(verification.checkedAt) || verification.checkedAt > this.now() ||
+            this.now() - verification.checkedAt > WATCH_POLICY.assessmentMaxAgeMs)
+          return "JEV assessment cancelled: market verification exceeded the 5-minute assessment window or has an invalid timestamp.";
+        return null;
+      };
       item.admittedAt ??= this.now();
       item.status = "assessing";
       item.detail =
@@ -276,7 +299,10 @@ export class MonitorService {
         launch,
         verification,
         trigger,
-        () => stillEligible() && this.now() - verification.checkedAt <= 90000,
+        {
+          active: () => stillEligible() && this.now() - verification.checkedAt <= WATCH_POLICY.maxAgeMs,
+          assessmentBlocker,
+        },
       );
       if (decision?.judgment) {
         item.status = "monitoring";
@@ -291,9 +317,9 @@ export class MonitorService {
           decision?.reasons.join(" · ") ||
           "No new JEV assessment: evidence unavailable, cancelled or market snapshot already assessed.";
       }
-    } catch {
-      item.status = "error";
-      item.detail =
+    } catch (error) {
+      item.status = error instanceof AssessmentBlockedError ? "blocked" : "error";
+      item.detail = error instanceof AssessmentBlockedError ? error.message :
         "A provider or assessment failed. No fabricated decision; retry after the cooldown.";
     } finally {
       await this.save();

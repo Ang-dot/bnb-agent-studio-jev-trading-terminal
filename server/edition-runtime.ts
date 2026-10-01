@@ -13,6 +13,7 @@ import type { JsonPersistence } from './cloud-store.js';
 import { Engine } from './engine.js';
 import { MemoryLoop } from './memory-loop.js';
 import { MonitorService } from './monitor.js';
+import { AssessmentBlockedError } from './assessment-signal.js';
 
 export async function createEditionRuntime(options:{
   edition:FrontendEdition;store:Store;providers:Providers;worker:WorkerRuntime;
@@ -42,14 +43,16 @@ export async function createEditionRuntime(options:{
     },
     available:async()=>options.active()&&!engine.busy&&!(await store.read()).halted&&!options.replayBusy()&&
       providers.statuses.get(providers.memoryProvider)?.state!=='missing',
-    assess:async(launch,verification,context,active)=>{
+    assess:async(launch,verification,context,guard)=>{
       if(!options.active())throw new Error('Edition worker is disabled');
       void worker.run(()=>options.refreshEvidence(launch.address));
       const pool=await providers.pool(verification.pool!,launch.address);
-      if(pool.token.toLowerCase()!==launch.address||!active())throw new Error('Monitoring evidence unavailable');
+      if(pool.token.toLowerCase()!==launch.address)throw new Error('Monitoring identity mismatch');
+      const blocked=guard.assessmentBlocker();
+      if(blocked)throw new AssessmentBlockedError(blocked);
       if(!engine.pools.some(p=>p.address===pool.address))engine.pools.push(pool);
       await learning.observe(pool,context).catch(()=>{});
-      return (await engine.cycle(pool.address,{context,active,paper:true}))[0];
+      return (await engine.cycle(pool.address,{context,...guard,paper:true}))[0];
     },
   },options.monitorRecord).init();
   return {edition,store,providers,learning,studio,engine,monitor};

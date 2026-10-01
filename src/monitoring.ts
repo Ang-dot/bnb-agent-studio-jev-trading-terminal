@@ -9,6 +9,7 @@ export const WATCH_POLICY = Object.freeze({
   minSwaps5m: 5,
   maxGraduationAgeMs: 24 * 60 * 60_000,
   maxAgeMs: 90_000,
+  assessmentMaxAgeMs: 5 * 60_000,
   reassessMs: 60_000,
 });
 export interface LaunchActivity {
@@ -28,10 +29,11 @@ export function screenLaunch(
   l: Launch,
   activity: LaunchActivity | undefined,
   now: number,
+  maxAgeMs: number = WATCH_POLICY.maxAgeMs,
 ): Admission {
   const p = WATCH_POLICY;
   const fresh = (t: number) =>
-    Number.isFinite(t) && t <= now && now - t <= p.maxAgeMs;
+    Number.isFinite(t) && t <= now && now - t <= maxAgeMs;
   const atLeast = (n: number | null | undefined, floor: number) =>
     n != null && Number.isFinite(n) && n >= floor;
   const amount = (n: number | null | undefined) =>
@@ -56,7 +58,7 @@ export function screenLaunch(
       label: "Fresh feeds",
       pass: fresh(l.observedAt) && !!activity && fresh(activity.observedAt),
       detail:
-        "Launch and 5-minute activity observations must be ≤90 seconds old; absent ranking coverage is unknown, not zero.",
+        `Launch and 5-minute activity observations must be ≤${maxAgeMs / 1000} seconds old; absent ranking coverage is unknown, not zero.`,
     },
     {
       label: "Liquidity ≥ $2k",

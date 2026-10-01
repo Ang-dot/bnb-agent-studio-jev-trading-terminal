@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { MonitorService } from "./monitor.js";
+import { MonitorService, type MonitorAssessmentGuard } from "./monitor.js";
 import type { LaunchFeedState, Launch, Graduation } from "../src/launches.js";
 import type { Decision } from "../src/types.js";
-import type { LaunchActivity } from "../src/monitoring.js";
+import type { LaunchActivity, MonitorTrigger } from "../src/monitoring.js";
 const epoch = 1_790_000_000_000;
 const token = `0x${"a".repeat(40)}`;
 const launch = {
@@ -44,7 +44,7 @@ function setup() {
     detail: "test",
   }));
   const assess = vi.fn(
-    async () =>
+    async (_launch: Launch, _verification: Graduation, _trigger: MonitorTrigger, _guard: MonitorAssessmentGuard) =>
       ({
         id: "decision",
         time: now,
@@ -80,6 +80,57 @@ describe("automatic non-executing monitor", () => {
     const x=setup();x.feed.launches=[{...launch,stage:'new',createdAt:epoch-1000,reportedGraduatedAt:null}];
     x.verify.mockResolvedValue({token,status:'paper_launch',pool:`launch:${token}`,checkedAt:epoch,detail:'Indicative'});
     await x.service.tick();expect(x.assess).toHaveBeenCalledOnce();expect(x.service.state.items[0].status).toBe('monitoring');
+  });
+  it("allows admitted research beyond 90 seconds but expires it after five minutes", async () => {
+    const x = setup();
+    x.assess.mockImplementation(async (_launch, _verification, _trigger, guard) => {
+      x.advance(90_001);
+      expect(guard.assessmentBlocker()).toBeNull();
+      expect(guard.active()).toBe(false);
+      x.advance(209_999);
+      expect(guard.assessmentBlocker()).toBeNull();
+      x.advance(1);
+      expect(guard.assessmentBlocker()).toContain("activity evidence exceeded the 5-minute");
+      return { reasons: [guard.assessmentBlocker()!] } as Decision;
+    });
+    await x.service.tick();
+    expect(x.assess).toHaveBeenCalledOnce();
+    expect(x.service.state.items[0].detail).toContain("5-minute assessment window");
+  });
+  it("keeps the 90-second gate for starting a new assessment", async () => {
+    const x = setup();
+    x.feed.launches = [{ ...launch, observedAt: epoch - 90_001 }];
+    await x.service.tick();
+    expect(x.assess).not.toHaveBeenCalled();
+  });
+  it("distinguishes pause, discovery pause and a pause/rearm during research", async () => {
+    const x = setup();
+    x.assess.mockImplementation(async (_launch, _verification, _trigger, guard) => {
+      x.feed.enabled = false;
+      expect(guard.assessmentBlocker()).toContain("launch discovery was paused");
+      x.feed.enabled = true;
+      await x.service.setEnabled(false);
+      expect(guard.assessmentBlocker()).toContain("monitoring was paused");
+      expect(guard.active()).toBe(false);
+      await x.service.setEnabled(true);
+      expect(guard.assessmentBlocker()).toContain("settings changed");
+      return { reasons: [guard.assessmentBlocker()!] } as Decision;
+    });
+    await x.service.tick();
+    expect(x.service.state.items[0].detail).toContain("settings changed");
+  });
+  it("still cancels for new risk flags or a removed token inside the extended window", async () => {
+    const x = setup();
+    x.assess.mockImplementation(async (_launch, _verification, _trigger, guard) => {
+      x.advance(100_000);
+      x.feed.launches[0].riskFlags = ["reported risk"];
+      expect(guard.assessmentBlocker()).toContain("No reported hard risk check");
+      x.feed.launches = [];
+      expect(guard.assessmentBlocker()).toContain("no longer in the launch feed");
+      return { reasons: [guard.assessmentBlocker()!] } as Decision;
+    });
+    await x.service.tick();
+    expect(x.assess).toHaveBeenCalledOnce();
   });
   it("persists pause and attempt cooldown across restart", async () => {
     const dir = await mkdtemp(join(tmpdir(), "jev-monitor-test-"));

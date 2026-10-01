@@ -1,3 +1,4 @@
+import { AssessmentBlockedError } from '../../../server/assessment-signal.js';
 import { isLaunchPaper } from '../../../src/paper-settings.js';
 import { createHash } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
@@ -116,7 +117,7 @@ export function createAssessmentWork(deps: {
         decision.id=job.requestId; // No inference consumed this market minute; a later retry can use it.
         decision.reasons=[error.message];return finish('skipped');
       }
-      decision.reasons = [error instanceof CoinGeckoError ? error.message : error instanceof Error && error.message === 'Monitoring paused or evidence expired before JEV; no new model call.'
+      decision.reasons = [error instanceof CoinGeckoError ? error.message : error instanceof AssessmentBlockedError
         ? error.message : `${stage} request or response validation failed. No fill; retry after fresh evidence arrives.`];
       return finish('skipped');
     }
