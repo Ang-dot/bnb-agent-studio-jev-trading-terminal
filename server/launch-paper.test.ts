@@ -96,6 +96,19 @@ describe('aggressive launch paper path',()=>{
     expect(result.rangeLowUsd).toBe(.8);expect(result.distanceFromLowPct).toBe(25);
     expect(launchEntrySetup(launch,[candle(now,1)],now).rangeLowUsd).toBeNull();
   });
+  it('dates candle coverage from its minute bucket end while retaining fresh execution prices',()=>{
+    const candle=(ago:number,low:number)=>({time:(now-ago)/1000,open:1,close:1,low,high:2,volume:1});
+    const c=context(), l={...launch,marketCapUsd:40000};
+    c.snapshot.entrySetup=launchEntrySetup(l,[candle(240000,.8),candle(180000,.9),candle(110000,1)],now);
+    expect(c.snapshot.entrySetup).toMatchObject({rangeLowUsd:.8,candleTo:now-110000,candleIntervalMs:60000});
+    expect(evaluatePolicy(c).action).toBe('buy');
+    c.snapshot.observedAt=now-90001;
+    expect(evaluatePolicy(c).action).toBe('hold'); // A fresh chart never authorizes an old execution mark.
+    c.snapshot.observedAt=now;
+    c.snapshot.entrySetup.candleTo=now-150001;
+    expect(evaluatePolicy(c).action).toBe('hold');
+    expect(launchEntrySetup(l,[candle(280000,.8),candle(220000,.9),candle(151000,1)],now).rangeLowUsd).toBeNull();
+  });
   it('uses a recent base before graduation without accepting an acute curve spike',()=>{
     const candle=(ago:number,low:number)=>({time:(now-ago)/1000,open:1,close:1,low,high:2,volume:1});
     const base=[candle(20*60000,.1),candle(4*60000,.9),candle(2*60000,.95),candle(0,1)];

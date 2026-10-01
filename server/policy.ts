@@ -50,7 +50,8 @@ export function narrativeProbe(research: XResearch, s: Snapshot, now: number) {
 export function entryLocation(s: Snapshot, now: number) {
   const e=s.entrySetup,p=PAPER_POLICY;
   if(!e || e.token!==s.token || !Number.isFinite(e.observedAt) || e.observedAt>now || now-e.observedAt>p.maxAgeMs) return false;
-  const rangeFresh=e.candleTo!=null&&e.candleTo<=now&&now-e.candleTo<=p.maxAgeMs;
+  const interval=e.candleIntervalMs===60000?60000:0; // Historical records retain their original timestamp semantics.
+  const rangeFresh=e.candleTo!=null&&e.candleTo<=now&&now-e.candleTo<=p.maxAgeMs+interval;
   const distance=rangeFresh?e.distanceFromLowPct:null;
   if(distance!=null&&distance>p.maxChasePct)return false;
   return (distance!=null&&Number.isFinite(distance)&&distance>=0&&distance<=p.nearLowPct) ||
