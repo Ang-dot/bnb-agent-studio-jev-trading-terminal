@@ -60,7 +60,7 @@ describe("provider boundary", () => {
   it("sends typed source assessments with explicit evidence IDs and preserves the returned judgments", async () => {
     const snapshot: Snapshot = { pool: "0x" + "1".repeat(40), token: "0x" + "2".repeat(40), name: "Fixture",
       priceUsd: 1, liquidityUsd: 100000, volume24h: 200000, change1h: 1, buyCount: 1, sellCount: 1,
-      observedAt: 1000, marketAt: 1000, source: "bitquery", candleId: "fixture" };
+      observedAt: 1000, marketAt: 1000, source: "bitquery", candleId: "fixture", entrySetup:{token:"0x"+"2".repeat(40),observedAt:1000,source:"GMGN",marketCapUsd:20000,rangeLowUsd:null,distanceFromLowPct:null,candleFrom:null,candleTo:null} };
     const research: XResearch = { token: snapshot.token, status: "ready", detail: "Fixture", model: "fixture", window: { from: 0, to: 1000 },
       collectedAt: 1000, expiresAt: 2000, searchCalls: 1, rejectedCount: 0,
       sources: [{ postId: "source-post", url: "https://x.com/fixture/status/2103362829185974272", handle: "fixture", publishedAt: 900,
@@ -78,6 +78,8 @@ describe("provider boundary", () => {
     });
     const supporting=researchInput(normalizeEvidence(snapshot.token,[{key:'info',requestedAt:900,receivedAt:1000,raw:{address:snapshot.token,price:{buy_volume_1m:100,sell_volume_1m:50}}}],1000),snapshot.token,snapshot.pool,1000)!;
     const judgment = await providers.judge(snapshot, [], research,supporting);
+    expect(payload.state.market.entrySetup.marketCapUsd).toBe(20000);
+    expect(payload.state.market.liquidityUsd).toBe(100000);
     expect(payload.state.supporting_research).toEqual(supporting);
     expect(payload.questions.Rflow.type).toBe('choice');
     expect(judgment.assessments?.find(a=>a.id==='Rflow')?.kind).toBe('research');

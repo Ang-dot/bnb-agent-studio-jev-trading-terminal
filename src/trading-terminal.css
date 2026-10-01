@@ -78,7 +78,9 @@
 .tt-radar-foot { padding:12px 17px; display:flex; flex-direction:column; color:#7b87a0; gap:3px; font-size:11px; }
 .tt-radar-foot small { font-size:10px; color:#a0a8b7; }
 .tt-center { min-width:0; padding:0 13px 9px; background:#fff; }
-.tt-token-header { display:flex; align-items:center; gap:11px; min-height:78px; }
+.tt-token-header { display:flex; flex-wrap:wrap; align-items:center; gap:11px; min-height:78px; padding:12px 0; }
+.tt-token-metrics { display:flex; align-items:center; gap:11px; margin-left:auto; }
+.tt-token-metrics .tt-price { margin-left:0; }
 .tt-token-name { min-width:0; }
 .tt-token-name h2 { font-size:23px; font-weight:750; letter-spacing:-.8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:180px; }
 .tt-token-name>span { color:#7d899c; font-size:10px; display:flex; gap:4px; align-items:center; }
@@ -301,4 +303,9 @@
   .tt-center { min-height:0; height:100%; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#d7dfe9 transparent; }
   .tt-center>* { flex-shrink:0; }
   .tt-chart-panel:not(.tt-chart-expanded) { flex:0 0 380px; }
+}
+
+@media(max-width:480px) {
+  .tt-token-metrics { width:100%; justify-content:space-between; gap:8px; }
+  .tt-token-metrics>.tt-price { border-left:0; padding-left:0; }
 }

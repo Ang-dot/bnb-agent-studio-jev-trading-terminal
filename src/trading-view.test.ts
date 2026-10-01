@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentActivity, decisionAction, groupDecisions, memoryPhases, tokenForDecision, chartRecords, recentlyAssessedToken, xRecoveredAt } from "./trading-view.js";
+import { currentActivity, decisionAction, groupDecisions, memoryPhases, tokenForDecision, chartRecords, recentlyAssessedToken, xRecoveredAt, marketCapForToken } from "./trading-view.js";
 import type { Launch } from "./launches.js";
 import type { Decision, TerminalState } from "./types.js";
 
@@ -10,6 +10,16 @@ const decision = (id: string, extra: Partial<Decision> = {}): Decision => ({
 const state = (d: Decision): TerminalState => ({ running: true, halted: false, busy: false, decisions: [d] } as TerminalState);
 
 describe("truthful trading presentation", () => {
+  it('shows market cap for the exact selected token and labels recorded fallback without substituting for missing feed data',()=>{
+    const launch={address:'0xabc',marketCapUsd:20000,observedAt:100000} as Launch;
+    const recorded=decision('cap',{snapshot:{token:'0xabc',entrySetup:{token:'0xabc',marketCapUsd:18000,observedAt:90000}} as any});
+    expect(marketCapForToken('0xABC',launch,recorded)).toEqual({value:20000,observedAt:100000,recorded:false});
+    expect(marketCapForToken('0xabc',undefined,recorded)).toEqual({value:18000,observedAt:90000,recorded:true});
+    expect(marketCapForToken('0xabc',{...launch,marketCapUsd:null},recorded).value).toBeNull();
+    expect(marketCapForToken('0xdef',launch,recorded).value).toBeNull();
+    expect(marketCapForToken('0xabc',{...launch,marketCapUsd:NaN}).value).toBeNull();
+  });
+
   it("marks a historical X skip recovered only from a later successful search for the same pool", () => {
     const failed=decision("old",{status:"not_evaluated",judgment:undefined,reasons:["X search unavailable"]});
     const recovered=decision("new",{time:200000,research:{status:"no_results",collectedAt:190000,token:"token"} as any});

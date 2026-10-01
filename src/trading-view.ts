@@ -5,6 +5,17 @@ import type { Launch } from "./launches.js";
 export function tokenForDecision(d: Decision, pools: TerminalState["pools"]) {
   return (d.snapshot?.token || d.research?.token || pools.find(p => p.address.toLowerCase() === d.pool.toLowerCase())?.token)?.toLowerCase() ?? null;
 }
+// Keep the selected token's feed value separate from a recorded assessment.
+// A missing value in a current feed is unknown, not a reason to reuse an older cap.
+export function marketCapForToken(token: string, launch?: Launch, decision?: Decision) {
+  const valid=(value: number | null | undefined)=>value!=null&&Number.isFinite(value)&&value>0?value:null;
+  if(launch?.address.toLowerCase()===token.toLowerCase())
+    return {value:valid(launch.marketCapUsd),observedAt:launch.observedAt,recorded:false};
+  const setup=decision?.snapshot?.entrySetup;
+  if(decision?.snapshot?.token.toLowerCase()===token.toLowerCase()&&setup?.token.toLowerCase()===token.toLowerCase())
+    return {value:valid(setup.marketCapUsd),observedAt:setup.observedAt,recorded:true};
+  return {value:null,observedAt:null,recorded:false};
+}
 export function decisionAction(d: Decision): { label: string; tone: string; source: string } {
   if (d.ruleExit) return { label: d.fill?.fraction && d.fill.fraction < 1 ? `TRIM ${Math.round(d.fill.fraction * 100)}%` : "EXIT", tone: "sell", source: "Code exit" };
   if (!d.judgment) return { label: "SKIPPED", tone: "neutral", source: "Evaluation" };
