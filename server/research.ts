@@ -82,10 +82,10 @@ export function parseResearch(raw: unknown, token: string, window: XResearch["wi
     if (sources.some(s => s.postId === p.postId) || themeSources.some(s => s.postId === p.postId)) continue;
     themeSources.push({...citations.get(p.postId)!, timestampSource: 'post-id', summary: item.summary});
   }
-  // Legitimate broader-theme citations do not turn an empty contract search into
-  // either token support or a failed search. Unclaimed citations still fail closed.
-  const unclaimedCitations = [...citations.keys()].filter(id => !themeSources.some(s => s.postId === id));
-  const status = !searchedContract ? "unverified" : sources.length ? "ready" : report.posts.length || unclaimedCitations.length ? "unverified" : "no_results";
+  // Native annotations can include unused search results. They supply no context
+  // unless explicitly selected and validated above; they cannot invalidate an
+  // honestly empty CA report or become token support through the theme path.
+  const status = !searchedContract ? "unverified" : sources.length ? "ready" : report.posts.length ? "unverified" : "no_results";
   const narrative = metadata ? parseNarrative(report.narrative, metadata, searchedContract ? sources : [], themeSources, searchedContract && status !== 'unverified', searchedTheme) : undefined;
   if (narrative && !themes.success) {
     narrative.issues.push('Broader-theme source list missing or invalid.');

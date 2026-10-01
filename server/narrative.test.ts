@@ -248,3 +248,12 @@ it('retains valid narrative findings and names invalid fields without inventing 
  expect(research.narrative!.findings!.kol).toMatchObject({verdict:'unknown',evidenceIds:[]});
  expect(research.narrative!.issues.join(' ')).toContain('kol.urls');
 });
+
+it('ignores unused native search citations without blocking a valid empty-contract narrative',()=>{
+ const raw=response();raw.output[2].content![0].annotations.push({type:'url_citation',url:url(10000,'unused')});
+ const research=parse(raw);expect(research.status).toBe('no_results');expect(research.sources).toEqual([]);
+ expect(research.narrative!.status).toBe('ready');expect(research.narrative!.themeSources).toHaveLength(1);
+ expect(JSON.stringify(research)).not.toContain('/unused/');
+ const invalid=edit(raw,r=>{r.posts=[{url:url(10000,'unused'),summary:'Unverified same ticker',identityExcerpt:'Not the contract'}];});
+ expect(parse(invalid).status).toBe('unverified'); // A claimed CA match still must validate.
+});
