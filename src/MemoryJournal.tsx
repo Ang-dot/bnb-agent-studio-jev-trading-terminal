@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Check, Clock3, Database, Fingerprint, RotateCcw, Sparkles } from 'lucide-react';
-import { memoryAvailable, type MemoryEpisode } from './memory.js';
+import { memoryAvailable, type JournalView, type MemoryEpisode } from './memory.js';
 import { MemoryLogo, useFrontendEdition } from './FrontendEdition.js';
 import './memory-journal.css';
 const time=(n:number)=>new Date(n).toLocaleTimeString('en-GB');
 const labels:Record<MemoryEpisode['capture']['status'],string>={queued:'Saved locally',retrying:'Retry scheduled',pending:'Accepted',compiling:'Compiling',completed:'Compiled',stored:'Stored in MEM9',unconfirmed:'Write unconfirmed',failed:'Needs attention'};
-export function MemoryJournal({episodes,token,now,onDecision}:{episodes:MemoryEpisode[];token:string;now:number;onDecision:(id:string)=>void}){
+export function MemoryJournal({view,now,onDecision}:{view:JournalView|null;now:number;onDecision:(id:string)=>void}){
  const {edition}=useFrontendEdition();
  const direct=edition==='kbw';
  const [scope,setScope]=useState<'token'|'all'>('token');
- const selected=episodes.filter(e=>scope==='all'||e.token===token||e.kind==='review');
- const counts={saved:episodes.length,compiled:episodes.filter(e=>memoryAvailable(e.capture)).length,recalled:episodes.filter(e=>e.recalledBy.length).length};
+ const selected=scope==='all'?(view?.recent??[]):(view?.token??[]);
+ const counts={saved:view?.counts.saved??0,compiled:view?.counts.available??0,recalled:view?.counts.recalled??0};
  return <section className='tt-experience' aria-label='Memory experience ledger'>
   <header><div><MemoryLogo/><span><h2>Experience ledger</h2><small>Observe. Remember. Revisit.</small></span></div><div className='tt-experience-scope'><button aria-pressed={scope==='token'} onClick={()=>setScope('token')}>This token</button><button aria-pressed={scope==='all'} onClick={()=>setScope('all')}>All</button></div></header>
   <div className='tt-experience-counts'><span><Database size={14}/><b>{counts.saved}</b> saved</span><span><Check size={14}/><b>{counts.compiled}</b> {direct?'stored':'compiled'}</span><span><RotateCcw size={14}/><b>{counts.recalled}</b> {direct?'retrieved for JEV':'recalled by JEV'}</span></div>
@@ -24,7 +24,7 @@ export function MemoryJournal({episodes,token,now,onDecision}:{episodes:MemoryEp
       <details><summary>Episode & receipts</summary><p>{e.capture.detail||(direct?'Storage is not proof of usefulness. Recall requires a matching memory ID and unchanged episode content.':'Compilation is not proof of usefulness. Recall is linked only when the returned page ID matches this source’s compiled pages.')}</p><small>Episode {e.id} · Source {e.capture.sourceId||'not confirmed'} · {e.capture.pageIds.length} linked pages{e.capture.checkedAt?` · checked ${time(e.capture.checkedAt)}`:''}</small>{e.decisionId&&<button onClick={()=>onDecision(e.decisionId!)}>View original decision</button>}<pre>{JSON.stringify(e.content,null,2)}</pre></details>
     </div>
   </article>)}</div>
-  {!selected.length&&<div className='tt-experience-empty'><Database size={20}/><span>{episodes.length?'No saved episodes for this token yet. Select All to inspect the session.':'The next eligible observation or assessment will start building experience—even without a fill.'}</span></div>}
+  {!selected.length&&<div className='tt-experience-empty'><Database size={20}/><span>{view?.counts.saved?'No saved episodes for this token yet. Select All to inspect the session.':'The next eligible observation or assessment will start building experience—even without a fill.'}</span></div>}
   <small className='tt-experience-disclaimer'>Follow-up marks are gross price changes, not achievable P&L. {direct?'Stored episode IDs link later recalls to their source.':'Compiled pages may combine several episodes.'} No claim of improved returns.</small>
  </section>;
 }

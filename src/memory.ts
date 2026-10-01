@@ -7,5 +7,11 @@ export interface MemoryEpisode {
   capture:{status:'queued'|'retrying'|CaptureReceipt['status'];sourceId?:string;pageIds:string[];attempts:number;nextAt:number;checkedAt?:number;compiledAt?:number;availableAt?:number;contentHash?:string;statusChecks?:number;detail?:string};
   recalledBy:{decisionId:string;at:number;pageId:string;assessment?:string}[];
 }
+export interface JournalView {
+  recent: MemoryEpisode[];
+  token: MemoryEpisode[];
+  linked?: MemoryEpisode;
+  counts: { saved: number; available: number; recalled: number };
+}
 export const memoryAvailable = (capture:MemoryEpisode['capture']) => capture.status==='completed'||capture.status==='stored';
 export const memoryAvailableAt = (capture:MemoryEpisode['capture']) => capture.availableAt??capture.compiledAt;

@@ -22,7 +22,7 @@ The Dockerfile builds an API-only Node 22 image with pinned GMGN CLI and BNB Age
 
 Cloud mode needs `HOSTING_MODE=cloud`, an exact HTTPS `PUBLIC_ORIGIN`, a random `ORIGIN_SECRET` of at least 32 characters and a TLS-capable `SUPABASE_DATABASE_URL`. The origin secret must match Pages. Use a database-scoped role with privileges on `jev_private`, and restrict database network access to required backend egress where possible. The Postgres client verifies TLS certificates; set `SUPABASE_DB_CA_PATH` to Supabase’s downloaded root certificate locally, or `SUPABASE_DB_CA_BASE64` as a protected runtime binding when the container has no certificate file. Use a direct connection with IPv6, otherwise the session pooler.
 
-Supabase Postgres persists the ledger, decisions, memory journal, research archive, launch/replay/monitor state, cooldown and ownership lease. Versioned journal compression is lossless, not encryption. Protect database backups as private records.
+Supabase Postgres persists the ledger, decisions, individual memory episodes, research archive, launch/replay/monitor state, cooldown and ownership lease. Legacy embedded memory episodes move to `jev_private.jev_memory_episode` only after the new worker acquires the lease; the move and removal from the terminal row share one transaction. The hot terminal row stays compressed, and unchanged reads return only a fingerprint. Versioned compression is lossless, not encryption. Protect database backups as private records.
 
 Keep `WORKER_ENABLED=false` during provisioning. Worker startup and paper arming are separate. Cloud ownership leases are renewed and writes are fenced; acquiring ownership or restarting pauses paper execution.
 

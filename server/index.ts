@@ -15,11 +15,12 @@ import { inspectChain, LockedLiveExecutor } from "./bnb.js";
 import { LaunchFeed, configureGmgnRuntime } from "./launch-feed.js";
 import { GraduationVerifier, readGraduation } from "./graduation.js";
 import { ReplayService, REPLAY_QUESTIONS, judgeReplay } from "./replay.js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { paperControl } from "./control.js";
 import { EvidenceArchive, EvidenceCollector } from "./enrichment.js";
 import { CloudStore } from './cloud-store.js';
-import { hostedSettings, cloudAccess, publicState, SharedReadCache } from './hosting.js';
+import { hostedSettings, cloudAccess, publicState, publicJournalView, SharedReadCache } from './hosting.js';
+import { localJournal } from './journal-store.js';
 import { WorkerRuntime, configuredWorkerEditions } from './worker-runtime.js';
 import { assessmentFetch } from './assessment-signal.js';
 
@@ -115,8 +116,21 @@ app.get("/api/health", (_req, res) => {
 });
 app.get("/api/state", async (_req, res) => {
   const {engine,studio,edition,providers}=runtimeFor(res);
-  const state = {...await engine.state(),assessmentService:studio.info(),edition,memoryProvider:providers.memoryProvider,workerActive:editionWorkerActive(edition)};
-  res.json(hosting && !res.locals.operator ? publicState(state) : {...state,access:{operator:true}});
+  const {memoryEpisodes: _journal, ...current}=await engine.state();
+  const state = {...current,assessmentService:studio.info(),edition,memoryProvider:providers.memoryProvider,workerActive:editionWorkerActive(edition)};
+  const body=JSON.stringify(hosting && !res.locals.operator ? publicState(state) : {...state,access:{operator:true}});
+  const tag='"'+createHash('sha256').update(body).digest('hex')+'"';
+  res.setHeader('ETag',tag);
+  if(_req.get('if-none-match')===tag)return void res.status(304).end();
+  res.type('json').send(body);
+});
+app.get('/api/journal',async(req,res)=>{
+  const {store}=runtimeFor(res);
+  const token=req.query.token===undefined?undefined:z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(req.query.token).toLowerCase();
+  const linkedId=req.query.linkedId===undefined?undefined:z.string().regex(/^[a-f0-9]{24}$/).parse(req.query.linkedId);
+  const publicOnly=!!(hosting&&!res.locals.operator);
+  const view=await (store.journal??localJournal(store)).view(token,linkedId,publicOnly);
+  res.json(publicOnly?publicJournalView(view):view);
 });
 app.get("/api/launches", (_req, res) => res.json(launches.state));
 app.get("/api/monitor", (_req, res) => {

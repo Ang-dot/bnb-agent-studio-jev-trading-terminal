@@ -46,7 +46,7 @@ KBW uses the direct Mem9 API in `server/mem9.ts`. Exact pinned episodes are stor
 
 ## Storage and SDK
 
-Local mode uses ignored SQLite/JSON state and loopback binding. Cloud uses Supabase Postgres, renewable leases and fenced writes. Pages serves public reads; operator writes require Access and backend verification. Secrets, raw exports and private brain context are not public source assets.
+Local mode uses ignored SQLite/JSON state and loopback binding. Cloud uses Supabase Postgres, renewable leases and fenced writes. Cloud memory episodes live in individually addressable rows, separate from the small trading-state row. The first worker to acquire the lease moves a legacy embedded journal into those rows atomically. Unchanged state polls use a database-side fingerprint and return no state payload from Postgres; the browser receives an HTTP 304 when its state is unchanged. The experience ledger requests only recent and token-matching episodes. Pages serves public reads; operator writes require Access and backend verification. Secrets, raw exports and private brain context are not public source assets.
 
 BNB Agent SDK 0.6.0 supplies chain constants, draft ERC-8004 metadata and Intent/executor types. A draft is not an on-chain registration. There is no authorized signer, verified live quote adapter or receipt reconciliation.
 

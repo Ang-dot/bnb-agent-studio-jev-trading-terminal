@@ -2,6 +2,7 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { timingSafeEqual } from 'node:crypto';
 import type { RequestHandler } from 'express';
 import type { TerminalState } from '../src/types.js';
+import type { JournalView } from './journal-store.js';
 
 export function hostedSettings(env: NodeJS.ProcessEnv) {
   if (env.HOSTING_MODE !== 'cloud') return null;
@@ -60,6 +61,14 @@ export function publicState(s: TerminalState): TerminalState {
     busy:s.busy,discoveryError:s.discoveryError,exitError:s.exitError,database:'Durable cloud storage',
     sdk:{version:s.sdk.version,chainId:s.sdk.chainId,walletAddress:null,registration:{}},liveBlockers:[...s.liveBlockers],access:{operator:false},
   };
+}
+
+export function publicJournalView(view: JournalView): JournalView {
+  const safe = (e: NonNullable<JournalView['linked']>) => ({
+    ...structuredClone(e),content:{summary:e.summary,publicView:true},
+    capture:{...e.capture,sourceId:undefined},
+  });
+  return {...view,recent:view.recent.map(safe),token:view.token.map(safe),linked:view.linked?safe(view.linked):undefined};
 }
 
 // Shared across all visitors; failures consume budget and are cached too.

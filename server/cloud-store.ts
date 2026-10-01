@@ -1,11 +1,13 @@
 import pg from 'pg';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { initialState, type Store } from './store.js';
 import type { AgentState } from '../src/types.js';
 import type { SupportingEvidence } from '../src/enrichment.js';
 import type { RawObservation } from './enrichment.js';
 import { initPostgresSchema, postgresPool } from './postgres.js';
 import { encodeState, decodeState } from './state-codec.js';
+import type { MemoryEpisode } from '../src/memory.js';
+import type { EpisodeJournal, JournalView } from './journal-store.js';
 export { encodeState, decodeState } from './state-codec.js';
 
 interface Lease {owner:string|null;epoch:number;expires:number}
@@ -17,11 +19,13 @@ export function claimLease(l:Lease,owner:string,now:number,ttl:number):Lease|nul
 export interface JsonPersistence {read():Promise<string|undefined>;write(value:string):Promise<void>}
 export class CloudStore implements Store {
   label='Supabase Postgres · TLS · fenced single worker';
+  journal:EpisodeJournal;
   private pool:pg.Pool;
+  private stateCache=new Map<number,{hash:string;state:AgentState}>();
   private owner=randomUUID();
   private epoch=0;
   private expires=0;
-  constructor(url:string){this.pool=postgresPool(url,6);}
+  constructor(url:string,pool?:pg.Pool){this.pool=pool??postgresPool(url,6);this.journal=this.journalFor(1);}
   async init(){
     await initPostgresSchema(this.pool);
     await this.pool.query('INSERT INTO jev_private.jev_terminal_state (id,data) VALUES (1,$1) ON CONFLICT (id) DO NOTHING',[JSON.stringify(initialState())]);
@@ -32,6 +36,19 @@ export class CloudStore implements Store {
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_runtime_records (name varchar(64) PRIMARY KEY, data text NOT NULL)');
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_evidence (id varchar(64) PRIMARY KEY, token varchar(42) NOT NULL, observed_at bigint NOT NULL, data text NOT NULL, raw text NOT NULL)');
     await this.pool.query('CREATE INDEX IF NOT EXISTS jev_evidence_token_time ON jev_private.jev_evidence (token, observed_at DESC)');
+    await this.pool.query(`CREATE TABLE IF NOT EXISTS jev_private.jev_memory_episode (
+      edition smallint NOT NULL, id text NOT NULL, token text NOT NULL, kind text NOT NULL,
+      created_at bigint NOT NULL, capture_status text NOT NULL, next_capture_at bigint,
+      next_followup_at bigint, recalled_count integer NOT NULL DEFAULT 0,
+      reviewed boolean NOT NULL DEFAULT false, data jsonb NOT NULL,
+      PRIMARY KEY (edition,id))`);
+    await this.pool.query('ALTER TABLE jev_private.jev_memory_episode ADD COLUMN IF NOT EXISTS reviewed boolean NOT NULL DEFAULT false');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS jev_memory_recent ON jev_private.jev_memory_episode (edition,created_at DESC)');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS jev_memory_token_recent ON jev_private.jev_memory_episode (edition,token,kind,created_at DESC)');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS jev_memory_capture_due ON jev_private.jev_memory_episode (edition,capture_status,next_capture_at)');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS jev_memory_followup_due ON jev_private.jev_memory_episode (edition,next_followup_at) WHERE next_followup_at IS NOT NULL');
+    await this.pool.query("CREATE INDEX IF NOT EXISTS jev_memory_outcomes_unreviewed ON jev_private.jev_memory_episode (edition,created_at) WHERE kind='outcome' AND NOT reviewed");
+    await this.pool.query("CREATE INDEX IF NOT EXISTS jev_memory_pages ON jev_private.jev_memory_episode USING gin ((data #> '{capture,pageIds}'))");
     return this;
   }
   private async lease(connection:pg.PoolClient){
@@ -43,6 +60,8 @@ export class CloudStore implements Store {
     try {await c.query('BEGIN');const {row,now}=await this.lease(c);const next=claimLease(row,this.owner,now,45000);
       if(!next){await c.query('ROLLBACK');return false;}
       await c.query('UPDATE jev_private.jev_worker_lease SET owner=$1,epoch=$2,expires=$3 WHERE id=1',[this.owner,next.epoch,next.expires]);
+      await this.migrateLegacyJournal(c);
+      await c.query('UPDATE jev_private.jev_worker_lease SET expires=floor(extract(epoch from clock_timestamp())*1000)::bigint+45000 WHERE id=1');
       await c.query('COMMIT');this.epoch=next.epoch;this.expires=Date.now()+40000;return true;
     }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
   }
@@ -54,6 +73,30 @@ export class CloudStore implements Store {
     });this.expires=Date.now()+40000;
   }
   async assertLease(){await this.fenced(async()=>{});}
+  private async migrateLegacyJournal(c:pg.PoolClient){
+    for(const edition of [1,2]){
+      const {rows}=await c.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=$1 FOR UPDATE',[edition]);
+      const state=decodeState(rows[0].data);
+      const episodes=state.memoryEpisodes;
+      if(!episodes?.length)continue;
+      // The lease and row locks make this a one-time, atomic move. A failed
+      // migration leaves the original journal intact for the next attempt.
+      await c.query(`INSERT INTO jev_private.jev_memory_episode
+        (edition,id,token,kind,created_at,capture_status,next_capture_at,next_followup_at,recalled_count,data)
+        SELECT $1,(e->>'id'),(e->>'token'),(e->>'kind'),(e->>'createdAt')::bigint,
+          (e #>> '{capture,status}'),NULLIF(e #>> '{capture,nextAt}','')::bigint,
+          (SELECT min((f->>'dueAt')::bigint) FROM jsonb_array_elements(e->'followUps') f WHERE f->>'status'='waiting'),
+          jsonb_array_length(e->'recalledBy'),e
+        FROM jsonb_array_elements($2::jsonb) e ON CONFLICT (edition,id) DO NOTHING`,[edition,JSON.stringify(episodes)]);
+      await c.query(`UPDATE jev_private.jev_memory_episode o SET reviewed=true
+        WHERE o.edition=$1 AND o.kind='outcome' AND EXISTS (
+          SELECT 1 FROM jev_private.jev_memory_episode r WHERE r.edition=o.edition AND r.kind='review'
+          AND (r.data #> '{content,episodeIds}') ? o.id)`,[edition]);
+      delete state.memoryEpisodes;
+      await c.query('UPDATE jev_private.jev_terminal_state SET data=$2 WHERE id=$1',[edition,encodeState(state)]);
+      this.stateCache.delete(edition);
+    }
+  }
   private async fenced<T>(work:(c:pg.PoolClient)=>Promise<T>):Promise<T>{
     const c=await this.pool.connect();
     try {await c.query('BEGIN');const {row,now}=await this.lease(c);
@@ -64,22 +107,111 @@ export class CloudStore implements Store {
       await c.query('COMMIT');return result;
     }catch(e){await c.query('ROLLBACK');this.expires=0;throw e;}finally{c.release();}
   }
-  async read(){const {rows}=await this.pool.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=1');return decodeState(rows[0].data);}
-  async mutate(fn:(s:AgentState)=>void){return this.fenced(async c=>{
-    const {rows}=await c.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=1 FOR UPDATE');
-    const state=decodeState(rows[0].data);fn(state);state.revision++;
-    await c.query('UPDATE jev_private.jev_terminal_state SET data=$1 WHERE id=1',[encodeState(state)]);return state;
-  });}
+  private async readRow(id:number){
+    const cached=this.stateCache.get(id);
+    const {rows}=await this.pool.query<{hash:string;data:string|null}>(
+      'SELECT md5(data) AS hash, CASE WHEN md5(data)=$2 THEN NULL ELSE data END AS data FROM jev_private.jev_terminal_state WHERE id=$1',
+      [id,cached?.hash??'']);
+    if(!rows[0])throw new Error('Terminal state missing');
+    if(rows[0].data!==null){
+      const state=decodeState(rows[0].data);delete state.memoryEpisodes;
+      this.stateCache.set(id,{hash:rows[0].hash,state});
+    }
+    return structuredClone(this.stateCache.get(id)!.state);
+  }
+  private async mutateRow(id:number,fn:(s:AgentState)=>void){
+    const result=await this.fenced(async c=>{
+      const cached=this.stateCache.get(id);
+      const {rows}=await c.query<{hash:string;data:string|null}>(
+        'SELECT md5(data) AS hash, CASE WHEN md5(data)=$2 THEN NULL ELSE data END AS data FROM jev_private.jev_terminal_state WHERE id=$1 FOR UPDATE',
+        [id,cached?.hash??'']);
+      const state=rows[0].data===null?structuredClone(cached!.state):decodeState(rows[0].data);
+      delete state.memoryEpisodes;
+      fn(state);state.revision++;
+      const encoded=encodeState(state);
+      await c.query('UPDATE jev_private.jev_terminal_state SET data=$2 WHERE id=$1',[id,encoded]);
+      return {state,hash:createHash('md5').update(encoded).digest('hex')};
+    });
+    this.stateCache.set(id,result);
+    return structuredClone(result.state);
+  }
+  async read(){return this.readRow(1);}
+  async mutate(fn:(s:AgentState)=>void){return this.mutateRow(1,fn);}
   kbwStore():Store {
     return {
       label:this.label+' · KBW',
-      read:async()=>{const {rows}=await this.pool.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=2');return decodeState(rows[0].data);},
-      mutate:async fn=>this.fenced(async c=>{
-        const {rows}=await c.query<{data:string}>('SELECT data FROM jev_private.jev_terminal_state WHERE id=2 FOR UPDATE');
-        const state=decodeState(rows[0].data);fn(state);state.revision++;
-        await c.query('UPDATE jev_private.jev_terminal_state SET data=$1 WHERE id=2',[encodeState(state)]);return state;
-      }),
+      journal:this.journalFor(2),
+      read:()=>this.readRow(2),
+      mutate:fn=>this.mutateRow(2,fn),
       close:()=>{}, // Shared pool and lease are owned by the root CloudStore.
+    };
+  }
+  private journalFor(edition:number):EpisodeJournal {
+    const one=async(sql:string,args:unknown[])=>{
+      const {rows}=await this.pool.query<{data:MemoryEpisode}>(sql,args);
+      return rows[0]?.data;
+    };
+    const values=(e:MemoryEpisode):(string|number|null)[]=>[
+      edition,e.id,e.token,e.kind,e.createdAt,e.capture.status,e.capture.nextAt,
+      Math.min(...e.followUps.filter(f=>f.status==='waiting').map(f=>f.dueAt)),
+      e.recalledBy.length,JSON.stringify(e),
+    ];
+    const write=async(c:pg.PoolClient,e:MemoryEpisode)=>{
+      const args=values(e);
+      if(!Number.isFinite(args[7] as number))args[7]=null;
+      await c.query(`UPDATE jev_private.jev_memory_episode SET token=$3,kind=$4,created_at=$5,
+        capture_status=$6,next_capture_at=$7,next_followup_at=$8,recalled_count=$9,data=$10::jsonb
+        WHERE edition=$1 AND id=$2`,args);
+    };
+    return {
+      latest:(token,kind)=>one('SELECT data FROM jev_private.jev_memory_episode WHERE edition=$1 AND token=$2 AND kind=$3 ORDER BY created_at DESC LIMIT 1',[edition,token,kind]),
+      get:id=>one('SELECT data FROM jev_private.jev_memory_episode WHERE edition=$1 AND id=$2',[edition,id]),
+      byPages:async pageIds=>{
+        if(!pageIds.length)return [];
+        const {rows}=await this.pool.query<{data:MemoryEpisode}>("SELECT data FROM jev_private.jev_memory_episode WHERE edition=$1 AND (data #> '{capture,pageIds}') ?| $2::text[] ORDER BY created_at DESC",[edition,pageIds]);
+        return rows.map(r=>r.data);
+      },
+      dueCapture:async(statuses,now,limit,oldestFirst)=>{
+        const {rows}=await this.pool.query<{data:MemoryEpisode}>(`SELECT data FROM jev_private.jev_memory_episode WHERE edition=$1 AND capture_status=ANY($2::text[]) AND next_capture_at<=$3 ORDER BY created_at ${oldestFirst?'ASC':'DESC'} LIMIT $4`,[edition,statuses,now,limit]);
+        return rows.map(r=>r.data);
+      },
+      dueFollowUp:now=>one('SELECT data FROM jev_private.jev_memory_episode WHERE edition=$1 AND next_followup_at<=$2 ORDER BY next_followup_at ASC LIMIT 1',[edition,now]),
+      unreviewedOutcomes:async()=>{
+        const {rows}=await this.pool.query<{data:MemoryEpisode}>(`SELECT data FROM jev_private.jev_memory_episode
+          WHERE edition=$1 AND kind='outcome' AND NOT reviewed AND data #>> '{content,horizonMinutes}'='30'
+          ORDER BY created_at ASC LIMIT 5`,[edition]);
+        return rows.map(r=>r.data);
+      },
+      insert:async episode=>this.fenced(async c=>{
+        const args=values(episode);
+        if(!Number.isFinite(args[7] as number))args[7]=null;
+        const {rowCount}=await c.query(`INSERT INTO jev_private.jev_memory_episode
+          (edition,id,token,kind,created_at,capture_status,next_capture_at,next_followup_at,recalled_count,data)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) ON CONFLICT (edition,id) DO NOTHING`,args);
+        if(episode.kind==='review'&&Array.isArray(episode.content.episodeIds))
+          await c.query("UPDATE jev_private.jev_memory_episode SET reviewed=true WHERE edition=$1 AND id=ANY($2::text[])",[edition,episode.content.episodeIds]);
+        return rowCount===1;
+      }),
+      update:(id,change)=>this.fenced(async c=>{
+        const {rows}=await c.query<{data:MemoryEpisode}>('SELECT data FROM jev_private.jev_memory_episode WHERE edition=$1 AND id=$2 FOR UPDATE',[edition,id]);
+        const episode=rows[0]?.data;
+        if(!episode)return undefined;
+        change(episode);
+        await write(c,episode);
+        return episode;
+      }),
+      view:async(token,linkedId,publicOnly=false):Promise<JournalView>=>{
+        // Project private evidence away in Postgres so public browsing never
+        // transfers full episode content from Supabase to the API process.
+        const projected=publicOnly?"data || jsonb_build_object('content',jsonb_build_object('summary',data->>'summary','publicView',true),'capture',(data->'capture')-'sourceId')":'data';
+        const [recent,forToken,linked,counts]=await Promise.all([
+          this.pool.query<{data:MemoryEpisode}>(`SELECT ${projected} AS data FROM jev_private.jev_memory_episode WHERE edition=$1 ORDER BY created_at DESC LIMIT 6`,[edition]),
+          token?this.pool.query<{data:MemoryEpisode}>(`SELECT ${projected} AS data FROM jev_private.jev_memory_episode WHERE edition=$1 AND (token=$2 OR kind='review') ORDER BY created_at DESC LIMIT 6`,[edition,token]):Promise.resolve(null),
+          linkedId?this.pool.query<{data:MemoryEpisode}>(`SELECT ${projected} AS data FROM jev_private.jev_memory_episode WHERE edition=$1 AND id=$2`,[edition,linkedId]).then(r=>r.rows[0]?.data):Promise.resolve(undefined),
+          this.pool.query<{saved:string;available:string;recalled:string}>("SELECT count(*) AS saved,count(*) FILTER(WHERE capture_status IN ('completed','stored')) AS available,count(*) FILTER(WHERE recalled_count>0) AS recalled FROM jev_private.jev_memory_episode WHERE edition=$1",[edition]),
+        ]);
+        return {recent:recent.rows.map(r=>r.data),token:(forToken??recent).rows.map(r=>r.data),linked,counts:{saved:Number(counts.rows[0].saved),available:Number(counts.rows[0].available),recalled:Number(counts.rows[0].recalled)}};
+      },
     };
   }
   record(name:string):JsonPersistence {

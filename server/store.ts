@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { AgentState } from "../src/types.js";
+import type { EpisodeJournal } from './journal-store.js';
 import { emptyLedger } from "./policy.js";
 export const initialState = (): AgentState => ({
   revision: 0,
@@ -14,6 +15,7 @@ export const initialState = (): AgentState => ({
 });
 export interface Store {
   label: string;
+  journal?: EpisodeJournal;
   read(): Promise<AgentState>;
   mutate(fn: (s: AgentState) => void): Promise<AgentState>;
   close(): void | Promise<void>;

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { hostedSettings, authorizeOperator, publicState, SharedReadCache } from './hosting.js';
+import { hostedSettings, authorizeOperator, publicState, publicJournalView, SharedReadCache } from './hosting.js';
 import { initialState } from './store.js';
 import type { TerminalState } from '../src/types.js';
+import type { MemoryEpisode } from '../src/memory.js';
 
 describe('hosted terminal safety', () => {
   it('refuses cloud mode without durable storage and an origin secret', () => {
@@ -32,6 +33,13 @@ describe('hosted terminal safety', () => {
     for (const value of ['private-session','private-host','secret-wallet','private-registration','swap-intent','private-title','private-summary','private-slug']) expect(json).not.toContain(value);
     expect(result.access?.operator).toBe(false);
     expect(s.decisions[0].memories[0].title).toBe('private-title');
+  });
+  it('publishes journal status without raw episode evidence or provider source ids',()=>{
+    const episode:MemoryEpisode={id:'episode',kind:'decision',token:'token',pool:'pool',name:'Token',createdAt:1,signature:'s',summary:'Public summary',content:{private:'raw research'},followUps:[],capture:{status:'stored',sourceId:'private-source',pageIds:['page'],attempts:1,nextAt:0},recalledBy:[]};
+    const view=publicJournalView({recent:[episode],token:[episode],linked:episode,counts:{saved:1,available:1,recalled:0}});
+    expect(JSON.stringify(view)).not.toContain('raw research');
+    expect(JSON.stringify(view)).not.toContain('private-source');
+    expect(view.recent[0].summary).toBe('Public summary');
   });
   it('deduplicates paid reads and enforces a global cache-miss budget, including failures', async () => {
     let calls = 0, now = 1000;

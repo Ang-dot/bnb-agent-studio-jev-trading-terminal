@@ -22,6 +22,7 @@ import { initialFocus, paperPerformance } from "./terminal-insights.js";
 import { PAPER_POLICY as policy } from "./paper-settings.js";
 import { currentActivity, decisionAction, elapsed, groupDecisions, memoryPhases, tokenForDecision, chartRecords, recentlyAssessedToken } from "./trading-view.js";
 import type { Candle, Decision, Memory, TerminalState } from "./types.js";
+import type { JournalView } from './memory.js';
 import "./trading-terminal.css";
 
 const dollars = (n: number | null | undefined, compact = false) => n == null || !Number.isFinite(n) ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: compact ? "compact" : "standard", maximumFractionDigits: compact ? 1 : 2 }).format(n);
@@ -49,11 +50,14 @@ function BrainLogo({ size = 38 }: { size?: number }) { return <MemoryLogo size={
 export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
   const { edition, memoryName, architecturePath } = useFrontendEdition();
   const [state, setState] = useState<TerminalState | null>(null);
+  const stateEtag=useRef<string|null>(null);
+  const [journal, setJournal] = useState<JournalView | null>(null);
   const [feed, setFeed] = useState<LaunchFeedState | null>(null);
   const [monitor, setMonitor] = useState<MonitorState | null>(null);
   const [disconnected, setDisconnected] = useState(false);
   const [selected, setSelected] = useState("");
   const [recordId, setRecordId] = useState("");
+  const linkedEpisodeId=state?.decisions.find(d=>d.id===recordId)?.memoryEpisodeId;
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -88,13 +92,23 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
     let disposed = false, pending = false;
     const controller = new AbortController();
     async function refresh() {
-      if (pending) return;
+      if (pending || document.hidden) return;
       pending = true;
       try {
-        const [s, f, m] = await Promise.all([read<TerminalState>("/api/state", controller.signal), read<LaunchFeedState>("/api/launches", controller.signal), read<MonitorState>("/api/monitor", controller.signal)]);
+        const stateRequest=(async()=>{
+          const headers:HeadersInit=stateEtag.current?{'If-None-Match':stateEtag.current}:{};
+          const response=await fetch(apiPath('/api/state'),{cache:'no-store',headers,signal:controller.signal});
+          if(response.status===304)return null;
+          if(!response.ok)throw new Error(`Request unavailable (${response.status})`);
+          stateEtag.current=response.headers.get('etag');
+          return response.json() as Promise<TerminalState>;
+        })();
+        const [s, f, m] = await Promise.all([stateRequest, read<LaunchFeedState>("/api/launches", controller.signal), read<MonitorState>("/api/monitor", controller.signal)]);
         if (disposed) return;
-        if(s.edition!==edition||s.memoryProvider!==memoryName)throw new Error('Memory edition mismatch');
-        setState(prev => JSON.stringify(prev) === JSON.stringify(s) ? prev : s);
+        if(s){
+          if(s.edition!==edition||s.memoryProvider!==memoryName)throw new Error('Memory edition mismatch');
+          setState(s);
+        }
         setFeed(prev => JSON.stringify(prev) === JSON.stringify(f) ? prev : f);
         setMonitor(prev => JSON.stringify(prev) === JSON.stringify(m) ? prev : m);
         setDisconnected(false);
@@ -104,18 +118,37 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
           setArrivalIds(arrivals.current.added);
           if (arrivals.current.added.length) setAnnouncement(`${arrivals.current.added.length} new launches detected by GMGN`);
         }
-        const next = s.decisions.filter(d => seenDecisions.current && !seenDecisions.current.has(d.id)).map(d => d.id);
-        if (next.length) setDecisionIds(next);
-        seenDecisions.current = new Set(s.decisions.map(d => d.id));
-        setSelected(prev => prev || recentlyAssessedToken(s.decisions, s.pools, f.launches, Date.now()) || initialFocus(f.launches, m.items, Date.now()));
+        if(s){
+          const next = s.decisions.filter(d => seenDecisions.current && !seenDecisions.current.has(d.id)).map(d => d.id);
+          if (next.length) setDecisionIds(next);
+          seenDecisions.current = new Set(s.decisions.map(d => d.id));
+          setSelected(prev => prev || recentlyAssessedToken(s.decisions, s.pools, f.launches, Date.now()) || initialFocus(f.launches, m.items, Date.now()));
+        }
       } catch { if (!disposed) setDisconnected(true); }
       finally { pending = false; }
     }
     void refresh();
     const polling = window.setInterval(() => void refresh(), 4000);
+    document.addEventListener('visibilitychange',refresh);
     const ticking = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => { disposed = true; controller.abort(); window.clearInterval(polling); window.clearInterval(ticking); };
+    return () => { disposed = true; controller.abort(); window.clearInterval(polling); window.clearInterval(ticking); document.removeEventListener('visibilitychange',refresh); };
   }, []);
+  useEffect(()=>{
+    let disposed=false;
+    const controller=new AbortController();
+    const refresh=async()=>{
+      if(document.hidden)return;
+      const params=new URLSearchParams();
+      if(/^0x[0-9a-f]{40}$/i.test(selected))params.set('token',selected.toLowerCase());
+      if(linkedEpisodeId)params.set('linkedId',linkedEpisodeId);
+      try {const next=await read<JournalView>(`/api/journal?${params}`,controller.signal);if(!disposed)setJournal(next);}catch{/* Last confirmed journal remains visible. */}
+    };
+    setJournal(null);
+    void refresh();
+    const timer=window.setInterval(()=>void refresh(),60000);
+    document.addEventListener('visibilitychange',refresh);
+    return()=>{disposed=true;controller.abort();window.clearInterval(timer);document.removeEventListener('visibilitychange',refresh);};
+  },[selected,linkedEpisodeId,state?.decisions[0]?.id]);
   useEffect(() => {
     if (!arrivalIds.length) return;
     const t = window.setTimeout(() => setArrivalIds([]), 12000);
@@ -185,7 +218,7 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
   const position = state?.ledger.positions.find(p => p.token.toLowerCase() === selected);
   const item = monitor?.items.find(i => i.token.toLowerCase() === selected);
   const phases = memoryPhases(record);
-  const episode = state?.memoryEpisodes?.find(e=>e.id===record?.memoryEpisodeId);
+  const episode = journal?.linked?.id===record?.memoryEpisodeId?journal?.linked:undefined;
   const capturePhase = episode?.capture.status || phases.capture;
   const memoryConnection=state?.providers.find(p=>p.name===memoryName);
   const performance = state ? paperPerformance(state.ledger, launches, now) : null;
@@ -297,10 +330,10 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
           {contextTab === "assessment" && <div className="tt-context-body"><div className="tt-inline-brand"><TypeSafeLogo size={27} /><strong>{record?.judgment ? "Recorded JEV assessment" : "No JEV assessment yet"}</strong></div>{record?.judgment ? <><div className="tt-probabilities">{Object.entries(record.judgment.probabilities).map(([key, val]) => <div key={key}><span>{key.toUpperCase()}</span><strong>{(val * 100).toFixed(1)}%</strong><progress max="1" value={val} aria-label={`${key} probability`} /></div>)}</div><p>{contextAssessment?.valueLabel || record.reasons[0] || "Typed action probabilities returned by JEV."}</p><small>Model confidence is not a profit forecast. Source assessments are separate outputs, not a reasoning trace.</small><button className="tt-text-button" onClick={() => setModal("evidence")}>Inspect questions & source assessments <ArrowUpRight size={12} /></button></> : <p>{record?.reasons[0] || "The model response will appear when a launch qualifies."}</p>}</div>}
           {contextTab === "sources" && <div className="tt-context-body"><div className="tt-outcome"><Chip tone={action?.tone}>{record ? executionLabel(record) : "Awaiting decision"}</Chip><span>{record?.status === "executed" ? "Paper simulation only" : "No order filled"}</span></div><p>{record?.reasons.join(" · ") || (item ? item.detail : "New and bonding launches qualify when fresh narrative, entry location and activity support a paper probe.")}</p><NarrativeSummary research={record?.research} assessments={record?.judgment?.assessments}/><div className="tt-source-counts"><span><BarChart3 size={14} /> {record?.snapshot?.source || "Market snapshot pending"}</span><span><Link2 size={14} /> {record?.research?.sources.length ?? 0} X citations</span><span><BrainLogo size={15} /> {record?.memories.length ?? 0} memories</span></div><button className="tt-evidence-button" onClick={() => setModal("evidence")}>View sources & execution checks <ArrowUpRight size={13} /></button></div>}
           {contextTab === "capture" && <div className="tt-context-body"><div className="tt-inline-brand"><BrainLogo size={30} /><strong>Memory capture</strong><Chip>{capturePhase}</Chip></div><p>{episode ? `${episode.summary}. ${episode.capture.detail||'Saved for future contextual recall.'}` : record?.memoryCapture || 'No capture is linked to this historical decision. New meaningful HOLDs, observations and fills now create episodes.'}</p>{episode&&<p>{episode.recalledBy.length?`Recalled in ${episode.recalledBy.length} later assessments.`:'Not recalled by a later assessment yet.'}{episode.decisionId!==record?.id?' Unchanged context: linked to an earlier saved episode.':''}</p>}<small>Follow the experience ledger below for ingestion receipts and outcome checks. A captured memory is not proof of improved performance.</small></div>}
-          <AssessmentReceiptView decision={record} episodes={state?.memoryEpisodes} />
+          <AssessmentReceiptView decision={record} episodes={episode?[episode]:[]} />
           {record && <div className="tt-context-foot"><button onClick={() => setModal("evidence")}><Link2 size={12} /> {record.research?.sources.length ?? 0} cited posts · {record.memories.length} memory pages</button><span>{elapsed(record.time, now)} ago · {record.status === "executed" ? "Fill recorded" : "No fill"}</span></div>}
         </section>
-        <MemoryJournal episodes={state?.memoryEpisodes??[]} token={selected} now={now} onDecision={id=>{const d=decisions.find(d=>d.id===id);if(d)selectDecision(d);else setNotice('This decision is outside the retained stream window; its episode remains in the experience ledger.');}}/>
+        <MemoryJournal view={journal} now={now} onDecision={id=>{const d=decisions.find(d=>d.id===id);if(d)selectDecision(d);else setNotice('This decision is outside the retained stream window; its episode remains in the experience ledger.');}}/>
         <SupportingResearch token={selected} decision={record} now={now} eligible={!!item?.admission.eligible} />
 
         <section className="tt-position-shelf" aria-label="Paper positions"><Wallet size={22} /><div><strong>{position ? `${symbol} · Paper position` : "Paper portfolio"}</strong><p>{position ? `${dollars(position.costUsd)} remaining cost · ${position.entries ?? 1} ${position.entries === 1 ? "entry" : "entries"}` : `${state?.ledger.positions.length ?? 0} open positions · ${dollars(state?.ledger.cashUsd)} available`}</p></div><div className="tt-shelf-pnl"><small>Unrealized P&L</small><b><Money value={performance?.unrealized} /></b></div><button onClick={() => setModal("ledger")} className="tt-icon-button" aria-label="Open paper portfolio"><ArrowUpRight size={18} /></button></section>
