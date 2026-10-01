@@ -249,8 +249,8 @@ export class Providers {
     const snapshot = await this.marketSnapshot(pool,options.freshPrice);
     const launch = this.launches?.state.launches.find(l=>l.address.toLowerCase()===pool.token.toLowerCase());
     if (launch && options.entryContext) {
-      const candles = await this.launches!.tokenCandles(pool.token,'1').catch(()=>[]);
-      snapshot.entrySetup = launchEntrySetup(launch,candles,Date.now());
+      const candles = await this.launches!.tokenCandles(pool.token,'1',{fresh:options.freshPrice}).catch(()=>[]);
+      snapshot.entrySetup = launchEntrySetup({...launch,priceUsd:snapshot.priceUsd},candles,Date.now());
       const symbol=launch.symbol.trim().normalize('NFKC').toLowerCase();
       snapshot.entrySetup.competingTickers = symbol ? this.launches!.state.launches.filter(l=>
         l.address.toLowerCase()!==launch.address.toLowerCase()&&l.symbol.trim().normalize('NFKC').toLowerCase()===symbol&&

@@ -233,3 +233,11 @@ it('supplements ranking gaps with bounded exact-token five-minute activity',asyn
  expect(parseTokenActivity({address,price:{address,volume_1h:'99999'}},address,now).volume5mUsd).toBeNull();
  expect(()=>parseTokenActivity({address,price:{address:'wrong'}},address,now)).toThrow('identity');
 });
+
+it('refreshes execution candles inside the chart cache window while normal UI reads remain cached',async()=>{
+ let calls=0;const at=Date.now();
+ const feed=new LaunchFeed(async()=>{calls++;return {list:[{time:at-60000,open:'1',high:'2',low:'1',close:String(calls===1?1:2),volume:'10'}]};});
+ expect((await feed.tokenCandles(address,'1'))[0].close).toBe(1);
+ expect((await feed.tokenCandles(address,'1'))[0].close).toBe(1);expect(calls).toBe(1);
+ expect((await feed.tokenCandles(address,'1',{fresh:true}))[0].close).toBe(2);expect(calls).toBe(2);
+});
