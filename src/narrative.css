@@ -1,0 +1,25 @@
+.narrative-evidence { margin: 16px 0 22px; color: #354154; overflow-wrap: anywhere; }
+.narrative-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; padding: 14px; border: 1px solid #e1e5eb; border-radius: 8px; background: #f8fafc; }
+.narrative-summary small { display: block; margin-bottom: 6px; color: #657285; font-size: 11px; }
+.narrative-summary strong { display: block; font-size: 14px; line-height: 1.5; color: #25344a; }
+.narrative-watch { grid-column: 1 / -1; margin: 0; padding-top: 10px; border-top: 1px solid #e1e5eb; font-size: 12px; line-height: 1.6; color: #765513; }
+.narrative-angle { padding: 12px 14px; border-left: 3px solid #d5b04c; background: #fffcf3; font-size: 13px; line-height: 1.6; }
+.narrative-angle b { display: block; margin-bottom: 4px; color: #6c541e; }
+.narrative-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.narrative-columns h4 { margin: 6px 0 8px; font-size: 14px; }
+.narrative-caption { font-size: 12px; line-height: 1.6; color: #657285; }
+.narrative-finding { padding: 12px 0; border-top: 1px solid #e5e8ee; }
+.narrative-finding > div:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.narrative-finding strong { font-size: 12px; }
+.narrative-finding p, .narrative-themes p, .narrative-metadata p { font-size: 12px; line-height: 1.65; }
+.narrative-verdict { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 10px; background: #edf0f4; color: #526176; }
+.narrative-verdict.supports { background: #eaf5ef; color: #2e6748; }
+.narrative-verdict.cautions { background: #fff2dc; color: #805715; }
+.narrative-refs { display: flex; flex-wrap: wrap; gap: 8px; }
+.narrative-refs a { font-size: 11px; color: #356b9b; text-decoration: underline; text-underline-offset: 3px; }
+.narrative-metadata, .narrative-themes { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e1e5eb; }
+.narrative-evidence summary { cursor: pointer; font-size: 12px; font-weight: 600; }
+.narrative-evidence small { line-height: 1.6; font-size: 11px; }
+.narrative-issues { margin-top: 12px; padding: 8px 12px; background: #fff5e4; border-radius: 6px; }
+.narrative-issues p { font-size: 12px; line-height: 1.6; margin: 4px 0; }
+@media (max-width: 620px) { .narrative-columns, .narrative-summary { grid-template-columns: 1fr; } }

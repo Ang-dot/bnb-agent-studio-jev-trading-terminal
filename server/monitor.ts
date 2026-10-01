@@ -192,7 +192,7 @@ export class MonitorService {
           status: "screening",
           detail:
             admission.checks.find((c) => !c.pass)?.detail ??
-            "Thresholds met; awaiting fresh GMGN graduation and market data.",
+            "Thresholds met; awaiting fresh GMGN stage and market data.",
         };
         if (admission.eligible) {
           if ((prior?.nextAssessmentAt ?? 0) > this.now()) {
@@ -219,12 +219,7 @@ export class MonitorService {
       )
       .sort((a, b) => (a.lastAttemptAt ?? 0) - (b.lastAttemptAt ?? 0));
     if (!queue.length) return;
-    if (this.attempts.length >= WATCH_POLICY.attemptsPerHour) {
-      this.state.error =
-        "Automatic assessment budget reached (60 attempts / rolling hour). The feed continues; queued tokens wait.";
-      return;
-    }
-    // One candidate per tick, FIFO by last attempt. Persist reservation before paid work.
+    // One candidate per tick, FIFO by last attempt. Persist attention cooldown before paid work. JEV calls are paced at dispatch.
     const item = queue[0],
       launch = this.deps.feed().launches.find((l) => l.address === item.token)!;
     item.lastAttemptAt = this.now();
@@ -234,7 +229,7 @@ export class MonitorService {
     await this.save();
     item.status = "verifying";
     item.detail =
-      "Activity gate passed. Reading GMGN graduation and resolving market data.";
+      "Activity gate passed. Reading GMGN launch stage and resolving market data.";
     try {
       const verification = await this.deps.verify(launch);
       const current = () =>
@@ -250,7 +245,7 @@ export class MonitorService {
         return;
       }
       if (
-        verification.status !== "gmgn_reported" ||
+        !["gmgn_reported", "paper_launch"].includes(verification.status) ||
         !verification.pool ||
         verification.token !== item.token ||
         verification.checkedAt > this.now() ||
@@ -259,7 +254,7 @@ export class MonitorService {
         item.status = "blocked";
         item.detail = verification.status === "gmgn_reported" && !verification.pool
           ? "GMGN graduation accepted; matching market pool unavailable. No JEV call yet."
-          : "Fresh GMGN graduation report required; no JEV call.";
+          : "Fresh supported launch market required; no JEV call.";
         return;
       }
       item.admittedAt ??= this.now();
@@ -271,7 +266,7 @@ export class MonitorService {
         admittedAt: item.admittedAt,
         checkedAt: this.now(),
         reason:
-          "Recent graduate crossed liquidity, holder and 5-minute activity thresholds.",
+          "Launch crossed liquidity, holder and 5-minute activity thresholds.",
         activity: lookup.get(item.token)!,
         admission: item.admission,
         disclaimer:
@@ -289,7 +284,7 @@ export class MonitorService {
         item.modelAction = decision.judgment.action;
         item.lastAssessedAt = decision.time;
         item.detail =
-          "JEV assessment recorded. Recheck after two minutes while thresholds pass. Paper fills require an armed session and separate entry checks.";
+          "JEV assessment recorded. Recheck after one minute while thresholds pass. Paper fills require an armed session and separate entry checks.";
       } else {
         item.status = "blocked";
         item.detail =

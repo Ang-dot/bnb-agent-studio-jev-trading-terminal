@@ -6,6 +6,18 @@ const token='0x'+'1'.repeat(40),pool='0x'+'2'.repeat(40),start=1790000000000;
 function decision(id='d',time=start):Decision{return {id,time,name:'TEST',pool,action:'hold',status:'held',reasons:['Waiting'],memories:[],memoryStatus:'cold start',checks:[],snapshot:{pool,token,name:'TEST',priceUsd:1,liquidityUsd:20000,observedAt:time,marketAt:time,source:'bitquery',volume24h:10000,change1h:1,buyCount:10,sellCount:5,candleId:id},judgment:{action:'hold',confidence:.8,quality:1,toxic:.1,probabilities:{hold:.8,buy:.1,sell:.1},model:'fixture',requestId:id,costUsd:0}};}
 function setup(){let time=start;const store=new SqliteStore(':memory:');const provider={captureEpisode:vi.fn(async()=>({id:'source',status:'pending' as const,affectedPageIds:[]})),captureStatuses:vi.fn(async()=>[{id:'source',status:'completed' as const,affectedPageIds:['page']}]),pool:vi.fn(async()=>({token,address:pool,priceUsd:1.2,discoveredAt:time})),snapshot:vi.fn(async()=>({...decision().snapshot,marketAt:time,observedAt:time,priceUsd:1.2}))};const loop=new MemoryLoop(store,provider as any,()=>time);return{store,provider,loop,setTime:(t:number)=>time=t};}
 describe('durable observation memory',()=>{
+ it('keeps launch simulation follow-ups indicative and never manufactures a trade timestamp',async()=>{
+  const {store,loop,provider,setTime}=setup();
+  const d=decision();d.pool=`launch:${token}`;
+  Object.assign(d.snapshot!,{pool:d.pool,source:'gmgn-paper',marketAt:0,launchQuote:{kind:'launch-indicative',token,platform:'flap',stage:'bonding',observedAt:start,providerAsOf:null,riskFlags:[]}});
+  await loop.record(d);expect((await store.read()).memoryEpisodes![0].baseline?.marketAt).toBeNull();
+  setTime(start+300000);
+  Object.assign(provider,{snapshot:vi.fn(async()=>({...d.snapshot,priceUsd:1.2,observedAt:start+300000,launchQuote:{...d.snapshot!.launchQuote!,observedAt:start+300000}}))});
+  await loop.tick();
+  const outcome=(await store.read()).memoryEpisodes!.find(e=>e.kind==='outcome')!;
+  expect(outcome.content.marketAt).toBeNull();expect(outcome.content.priceSource).toBe('gmgn-paper');
+  expect(outcome.content.interpretation).toContain('Indicative');store.close();
+ });
  it('uses actual same-pool trade timestamps for outcomes, never a fresh receipt over an old price',async()=>{
   const {store,loop,provider,setTime}=setup();await loop.record(decision());setTime(start+300000);
   Object.assign(provider,{snapshot:vi.fn(async()=>({...decision().snapshot,marketAt:start,observedAt:start+300000,priceUsd:1.2}))});

@@ -3,8 +3,8 @@ import type {MonitorItem} from "./monitoring.js";
 import {WATCH_POLICY as w} from "./monitoring.js";
 export function huntCandidates(launches:Launch[],items:MonitorItem[],now:number) {
   const fresh=(at:number|undefined)=>at!=null&&Number.isFinite(at)&&at<=now&&now-at<=w.maxAgeMs;
-  return launches.filter(l=>l.stage==="graduated_reported"&&fresh(l.observedAt)&&l.reportedGraduatedAt!=null&&
-    l.reportedGraduatedAt<=now&&now-l.reportedGraduatedAt<=w.maxGraduationAgeMs).map(launch=>{
+  return launches.filter(l=>fresh(l.observedAt)&&((l.stage==="graduated_reported"?l.reportedGraduatedAt:l.createdAt)!=null)&&
+    (l.stage==="graduated_reported"?l.reportedGraduatedAt!:l.createdAt!)<=now&&now-(l.stage==="graduated_reported"?l.reportedGraduatedAt!:l.createdAt!)<=w.maxGraduationAgeMs).map(launch=>{
     const item=items.find(i=>i.token===launch.address);
     const a=fresh(item?.activity?.observedAt)?item?.activity:undefined;
     const numbers=[launch.liquidityUsd,launch.holders,a?.volume5mUsd,a?.swaps5m];

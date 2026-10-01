@@ -57,7 +57,7 @@ export const coverageLabel = (status?: LaunchCoverage["status"]) =>
 export interface Graduation {
   token: string;
   // "verified" is retained only for already-saved historical replay records.
-  status: "gmgn_reported" | "verified" | "bonding" | "unverified";
+  status: "gmgn_reported" | "verified" | "bonding" | "paper_launch" | "unverified";
   source?: "GMGN";
   poolSource?: "GeckoTerminal" | "GMGN";
   checkedAt: number;

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Decision, Pool, TerminalState } from "../src/types.js";
 import { Providers } from "./providers.js";
-import { applyPaperFill, evaluatePolicy, marketExecutable, netExitUnit } from "./policy.js";
+import { applyPaperFill, evaluatePolicy, marketExecutable, netExitUnit, restorePositionBasis, needsProbe } from "./policy.js";
 import { paperExit } from "./exits.js";
 import type { Store } from "./store.js";
 import { proposedSwap, sdkInfo } from "./bnb.js";
@@ -68,6 +68,7 @@ export class Engine {
     return {
       ...(await this.store.read()),
       pools: this.pools,
+      xResearchUsage: this.providers.researchUsage,
       providers: [...this.providers.statuses.values()],
       busy: this.busy,
       discoveryError: this.discoveryError,
@@ -183,6 +184,7 @@ export class Engine {
             outcome.action,
             decision.id,
             Date.now(),
+            {probe:outcome.action === "buy" && needsProbe(decision.snapshot!,decision.research!,Date.now())},
           );
           decision.status = "executed";
           decision.fill = s.ledger.fills[0];
@@ -245,6 +247,7 @@ export class Engine {
             if(!s.running||s.halted||s.paperSession!==start.paperSession) return;
             const position=s.ledger.positions.find(p=>p.pool===held.pool);
             if(!position||position.token.toLowerCase()!==snapshot.token.toLowerCase()) return;
+            restorePositionBasis(s.ledger,position);
             snapshot.position={quantity:position.quantity,costUsd:position.costUsd,returnPct:(netExitUnit(snapshot)*position.quantity/position.costUsd-1)*100,takeProfits:position.takeProfits??0};
             const exit=paperExit(position,snapshot,Date.now());
             position.peakNetUnitUsd=Math.max(position.peakNetUnitUsd??0,netExitUnit(snapshot));

@@ -1,3 +1,4 @@
+import { launchPaperVerification } from './launch-paper.js';
 import type { Graduation, Launch } from "../src/launches.js";
 type PoolResolver = (token: string) => Promise<{ address: string; token: string }>;
 
@@ -15,7 +16,7 @@ export async function readGraduation(
   if (!fresh())
     return { ...base, status: "unverified", detail: "GMGN observation is stale or unavailable. Await a fresh report." };
   if (launch.stage !== "graduated_reported")
-    return { ...base, status: launch.stage === "bonding" ? "bonding" : "unverified", detail: "GMGN has not reported graduation. Observe only; no pre-graduation entry." };
+    return launchPaperVerification(launch, now());
   let pool: string | undefined;
   try {
     const candidate = await resolvePool?.(launch.address);

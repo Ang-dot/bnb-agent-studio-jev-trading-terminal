@@ -18,7 +18,7 @@ describe("truthful trading presentation", () => {
     expect(xRecoveredAt(failed,[{...recovered,research:{...recovered.research!,status:"error"}}])).toBeNull();
   });
   it("does not present an old model action as current", () => {
-    expect(currentActivity(state(decision("old")), null, 400_000).title).toBe("Watching graduates");
+    expect(currentActivity(state(decision("old")), null, 400_000).title).toBe("Watching early launches");
     expect(currentActivity(state(decision("fresh")), null, 110_000).title).toBe("JEV selected HOLD");
   });
   it("labels deterministic exits separately from JEV", () => {

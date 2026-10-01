@@ -438,9 +438,9 @@ export function App() {
                     </span>
                     <span className="pool-price">
                       <strong>{price(p.priceUsd)}</strong>
-                      <small className={p.change24h >= 0 ? "up" : "down"}>
-                        {p.change24h > 0 ? "+" : ""}
-                        {p.change24h.toFixed(2)}%
+                      <small className={(p.change24h ?? 0) >= 0 ? "up" : "down"}>
+                        {(p.change24h ?? 0) > 0 ? "+" : ""}
+                        {p.change24h?.toFixed(2) ?? "—"}%
                       </small>
                     </span>
                   </button>
@@ -477,7 +477,7 @@ export function App() {
               <div className="market-price">
                 <strong>{pool ? price(pool.priceUsd) : "—"}</strong>
                 <span className={(pool?.change1h ?? 0) >= 0 ? "up" : "down"}>
-                  {pool
+                  {pool?.change1h != null
                     ? `${pool.change1h > 0 ? "+" : ""}${pool.change1h.toFixed(2)}%`
                     : "—"}{" "}
                   <small>1h</small>
@@ -624,7 +624,7 @@ export function App() {
                 </h4>
                 <p id="evidence-market">
                   {decision?.snapshot
-                    ? `${price(decision.snapshot.priceUsd)} · ${marketSources(decision.snapshot).price} · ${time(decision.snapshot.marketAt)}`
+                    ? `${price(decision.snapshot.priceUsd)} · ${marketSources(decision.snapshot).price} · ${time(decision.snapshot.source === "gmgn-paper" ? decision.snapshot.observedAt : decision.snapshot.marketAt)}`
                     : pool
                       ? `${pool.name} · exact pool selected`
                       : "Choose a pool to inspect."}
@@ -634,8 +634,8 @@ export function App() {
                   <summary>Market inputs at this decision</summary>
                   <p>Price: {price(decision.snapshot.priceUsd)} · {marketSources(decision.snapshot).price}</p>
                   <p>Liquidity: {usd(decision.snapshot.liquidityUsd, 0)} · 24h volume: {usd(decision.snapshot.volume24h, 0)}</p>
-                  <p>1h change: {decision.snapshot.change1h.toFixed(2)}% · buys / sells: {decision.snapshot.buyCount} / {decision.snapshot.sellCount}</p>
-                  <p>Market time: {new Date(decision.snapshot.marketAt).toISOString()}</p>
+                  <p>1h change: {decision.snapshot.change1h?.toFixed(2) ?? "—"}% · buys / sells: {decision.snapshot.buyCount} / {decision.snapshot.sellCount}</p>
+                  <p>{decision.snapshot.source === "gmgn-paper" ? "Indicative receipt; price time unknown" : "Market time"}: {new Date(decision.snapshot.source === "gmgn-paper" ? decision.snapshot.observedAt : decision.snapshot.marketAt).toISOString()}</p>
                   <p>{marketSources(decision.snapshot).metrics} · received {new Date(decision.snapshot.metricsReceivedAt ?? decision.snapshot.observedAt).toISOString()}</p>
                   <p>Stored input snapshot, not the chart’s current values.</p>
                 </details>}

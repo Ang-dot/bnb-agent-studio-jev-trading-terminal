@@ -32,7 +32,7 @@ export async function startAssessmentService(options: {
   authToken?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
-  maxPerHour?: number;
+  maxPerMinute?: number;
 }) {
   const cfg = loadStudioToml(fileURLToPath(new URL('../studio.toml',import.meta.url)));
   const policy = B402SellerPolicy.fromToml(cfg);
@@ -109,8 +109,9 @@ export async function startAssessmentService(options: {
   const address=server.address();if (!address||typeof address==='string') throw failure();
   const endpoint=`http://127.0.0.1:${address.port}/x402`;
   const runner: AssessmentRunner={assess:async(pool,monitoring,guard)=>{
-    const now=Date.now();attempts=attempts.filter(at=>now-at<3600000);
-    if(closed||tickets.size||attempts.length>=(options.maxPerHour??60))throw failure();
+    const now=Date.now();attempts=attempts.filter(at=>at<=now&&now-at<60000);
+    // Bound private HTTP envelopes independently of the shared actual-model pacer.
+    if(closed||tickets.size||attempts.length>=(options.maxPerMinute??60))throw failure();
     await guard.assertActive();
     // Recheck after async admission to preserve single flight under races.
     if(closed||tickets.size)throw failure();

@@ -7,7 +7,7 @@ const l=(address:string,patch:Partial<Launch>={}):Launch=>({address,symbol:addre
 const item=(token:string,volume:number|null,swaps:number|null)=>({token,status:"screening",admission:{eligible:false,checks:[{label:"Activity",pass:false,detail:"Waiting"}]},activity:{observedAt:now,volume5mUsd:volume,swaps5m:swaps}} as MonitorItem);
 describe("launch opportunity queue",()=>{
   it("ranks measurable near-qualifiers without inventing an alpha or win score",()=>{
-    const result=huntCandidates([l("a"),l("b")],[item("a",900,9),item("b",100,1)],now);
+    const result=huntCandidates([l("a"),l("b")],[item("a",270,4.5),item("b",100,1)],now);
     expect(result[0].launch.address).toBe("a");
     expect(result[0].readiness).toBe(95);
   });

@@ -170,7 +170,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
   const [monitor, setMonitor] = useState<MonitorState | null>(null);
   const [selected, setSelected] = useState("");
   const [platform, setPlatform] = useState<Platform | "all">("all");
-  const [stage, setStage] = useState<LaunchStage | "all">("graduated_reported");
+  const [stage, setStage] = useState<LaunchStage | "all">("all");
   const [motion, setMotion] = useState(true);
   const [recordId, setRecordId] = useState("");
   const [query, setQuery] = useState("");
@@ -393,20 +393,20 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
   const recordJudgment = record?.judgment;
   const verificationFresh =
     verification && now - verification.checkedAt < 90000;
-  const verified = verification?.status === "gmgn_reported" && verificationFresh;
+  const verified = !!verification && ["gmgn_reported","paper_launch"].includes(verification.status) && verificationFresh;
   const feedStale = !launch || now - launch.observedAt > 90000;
   const entryReason = !verified
     ? verification?.status === "bonding"
-      ? "Still on the bonding curve. Observe only."
-      : "Awaiting a fresh GMGN graduation report."
+      ? "Awaiting fresh launch paper observations."
+      : "Awaiting fresh launch market data."
     : !verification?.pool
-      ? "GMGN graduation accepted. Matching market data is not available yet."
+      ? "Matching market data is not available yet."
     : feedStale
       ? "Market observations are stale. Await a fresh feed."
       : launch?.liquidityUsd == null
         ? "Liquidity evidence is missing."
-        : launch.liquidityUsd < PAPER_POLICY.minLiquidityUsd
-          ? `Liquidity ${money(launch.liquidityUsd, true)} < $20k entry floor. JEV can still scout.`
+        : launch.liquidityUsd < (launch.stage === "graduated_reported" ? PAPER_POLICY.minLiquidityUsd : PAPER_POLICY.launchMinLiquidityUsd)
+          ? `Liquidity ${money(launch.liquidityUsd, true)} < entry liquidity floor. JEV can still scout.`
           : launch.riskFlags.length
             ? launch.riskFlags.join(" · ")
             : state?.running ? "Paper session armed. A fresh JEV BUY and all entry checks are required." : "Paper session paused. Arm paper trading to allow qualified entries.";
@@ -533,12 +533,12 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
               <ArrowRight />
               <span className="step">Bonding</span>
               <ArrowRight />
-              <span className="step">GMGN graduation</span>
+              <span className="step">GMGN launch stage</span>
               <ArrowRight />
               <span className="step">Entry assessment</span>
               <span className="no-buy">
                 <ShieldCheck size={12} />
-                No buys before graduation.
+                Pre-graduation paper probes enabled.
               </span>
             </div>
             <p>
@@ -849,7 +849,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                 <span>
                   Monitoring Flap and Four.meme only.
                   <small>
-                    No buys before GMGN reports graduation. Real trading is locked.
+                    New and bonding paper entries enabled. Real trading is locked.
                   </small>
                 </span>
               </div>
@@ -944,7 +944,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                           {judgment
                             ? `Recorded ${time(decision!.time)} · confidence ${(judgment.confidence * 100).toFixed(0)}%`
                             : nextTrigger ? `Not called · waiting for ${nextTrigger.label}. ${nextTrigger.detail}` : (monitorItem?.detail ??
-                              "Waiting for automatic screening and a fresh GMGN graduation report.")}
+                              "Waiting for automatic screening and a fresh GMGN market observation.")}
                         </p>
                       </div>
                     </div>
@@ -1118,8 +1118,8 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                             {verified
                               ? verification?.detail
                               : verification?.status === "bonding"
-                                ? "Continue observing. No pre-graduation entry."
-                                : "GMGN graduation is required before assessment."}
+                                ? "Continue observing until fresh evidence qualifies."
+                                : "Fresh supported launch market data is required before assessment."}
                           </p>
                         </div>
                         <Source
@@ -1211,7 +1211,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                             </strong>
                             <p>
                               {decision?.memoryStatus ||
-                                "After graduation, retrieve prior context and show exactly what was supplied to the model."}
+                                "For qualified launches, retrieve prior context and show exactly what was supplied to the model."}
                             </p>
                           </div>
                           <p className="memory-explanation">
@@ -1320,7 +1320,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                         <strong>No JEV decision for this launch yet.</strong>
                         <p>
                           {monitorItem?.detail ??
-                            "No manual step needed. JEV assesses automatically after the attention gate, GMGN graduation and matching market data are available."}
+                            "No manual step needed. JEV assesses automatically after the attention gate and matching market data are available."}
                         </p>
                       </div>
                     </div>
@@ -1437,8 +1437,8 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
             <>
               <FlaskConical className="dialog-icon"/><span className="eyebrow">SIMULATION ONLY · NO WALLET TRANSACTIONS</span>
               <h2>Let JEV hunt. Keep the sizing in code.</h2>
-              <p>Autonomously simulate entries in freshly qualified Flap and Four.meme graduates. $50 starters, six slots, up to $150 per token and $600 total entry cost including fees.</p>
-              <p>At +50% modeled net return, sell half; at +100%, sell half the remainder. Trail the rest by 25% from the observed peak after the first trim. A −25% stop or JEV SELL exits the remainder.</p>
+              <p>Autonomously simulate entries in qualified new, bonding and graduated Flap / Four.meme launches. $25 launch probes, $50 DEX starters, ten slots; $75 launch / $150 DEX token caps and $1,000 total entry cost including fees.</p>
+              <p>At 2× modeled net return, recover invested principal after modeled costs. At 3× and 4×, sell 15% of original tokens each time. Trail the runner by 25%. A −20% stop or JEV SELL can exit earlier.</p>
               <p>Prices are sampled, not executable quotes. Tax, gas, MEV and API charges are not modeled. Stops can fill beyond their trigger. Pause stops both entries and exits; restart always boots paused.</p>
               <button className="yellow-button" disabled={busy||!monitor?.enabled||!feed?.enabled||!!state?.halted} onClick={()=>{setModal(null);void act("/api/control",{action:"start"},"Autonomous PAPER session armed. No real transactions.");}}>Start autonomous paper session</button>
               {(!monitor?.enabled||!feed?.enabled)&&<p>Resume observation and JEV monitoring before arming.</p>}
@@ -1466,25 +1466,22 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
               <span className="eyebrow">CODE OWNS THE LIMITS</span>
               <h2>Scout early. Enter small. Manage the runner.</h2>
               <p>
-                Flap and Four.meme on BSC only. We trust fresh GMGN graduation
-                reports; no independent on-chain migration check. A matching
-                supported market pool is still needed for price data. Graduation
-                is not a safety verdict or permission to buy.
+                Flap and Four.meme on BSC. Early launch fills use indicative GMGN token marks with unknown provider price time. DEX fills require a matching fresh pool trade. Graduation does not automatically convert a simulated launch position into DEX inventory.
               </p>
               <div className="policy-grid">
                 {[
-                  ["Pre-graduation entry", "Never"],
+                  ["Pre-graduation entry", "$25 indicative paper probes"],
                   ["Token scan", "Not used"],
                   ["Starting paper capital", money(state?.ledger.initialCashUsd ?? 2000)],
-                  ["Scout / entry liquidity", "$10k / $20k"],
-                  ["Starter / token budget", "$50 / $150 incl. fees"],
-                  ["Maximum positions", "6"],
-                  ["Total entry-cost budget", "$600 / 30% of starting capital"],
-                  ["Take profit", "+50%: half · +100%: half again"],
-                  ["Runner / stop trigger", "25% trail / −25% net return"],
-                  ["Add to position", "Fresh BUY +10% net · 2m cooldown"],
-                  ["Daily realized loss entry-stop", "$200 gross losses / UTC day"],
-                  ["Modeled fee / adverse slippage", "0.30% / 0.50%"],
+                  ["Scout / entry liquidity", "$2k scout / $2k launch / $5k DEX"],
+                  ["Starter / token budget", "$25 / $75 launch · $50 / $150 DEX"],
+                  ["Maximum positions", "10"],
+                  ["Total entry-cost budget", "$1,000 / 50% of starting capital"],
+                  ["Take profit", "2× principal out · 3× / 4× sell 15% original"],
+                  ["Runner / stop trigger", "25% trail / −20% net return"],
+                  ["Add to position", "Fresh BUY +5% net · 1m cooldown"],
+                  ["Daily realized loss entry-stop", "$400 gross losses / UTC day"],
+                  ["Modeled fee / adverse slippage", "DEX 0.3% / 0.5% · launch 1% / 3%"],
                   ["Token taxes / gas", "Not modeled"],
                   ["Live signer", "Not armed"],
                 ].map(([k, v]) => (
@@ -1531,7 +1528,7 @@ export function EvidenceDesk({ onReplay = () => {} }: { onReplay?: () => void })
                 <section className="record-section" id="evidence-market">
                   <h3>Market input supplied to JEV</h3>
                   <p>
-                    Recorded {time(record.snapshot.marketAt)} ·{" "}
+                    {record.snapshot.source === "gmgn-paper" ? "Indicative receipt" : "Trade"} {time(record.snapshot.source === "gmgn-paper" ? record.snapshot.observedAt : record.snapshot.marketAt)} ·{" "}
                     {record.snapshot.source}
                   </p>
                   <p>{marketSources(record.snapshot).metrics} · received {time(record.snapshot.metricsReceivedAt ?? record.snapshot.observedAt)}</p>

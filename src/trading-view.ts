@@ -20,7 +20,7 @@ export function currentActivity(state: TerminalState | null, monitor: MonitorSta
   if (state.busy || monitor?.busy) return { title: working ? `Assessing ${working.symbol}` : "Assessing market context", detail: working?.detail || "An evaluation is in progress", active: true };
   const d = state.decisions.find(d => d.judgment);
   if (d && now >= d.time && now - d.time < 30_000) return { title: `JEV selected ${decisionAction(d).label}`, detail: `${d.name} · ${d.status === "executed" ? "Paper fill recorded" : "No fill"}`, active: false };
-  return { title: "Watching graduates", detail: "Waiting for the next qualifying assessment", active: false };
+  return { title: "Watching early launches", detail: "Waiting for the next qualifying assessment", active: false };
 }
 export function memoryPhases(d?: Decision) {
   const recall = !d ? "not reached" : d.memories.length ? "retrieved" : /cold start/i.test(d.memoryStatus) ? "cold start" : /fail|unavailable|error/i.test(d.memoryStatus) ? "unavailable" : d.judgment ? "no matches" : "not reached";

@@ -29,7 +29,7 @@ export function AssessmentReceiptView({decision,episodes=[]}:{decision?:Decision
       </li>)}</ol>
       <div className="studio-receipt-evidence">
         <p><b>{decision.judgment?'Inputs supplied to JEV:':'Evidence collected before stop:'}</b> {decision.research?.sources.length??0} cited X posts · {decision.memories.length} recalled memories · {memoryAssessments.length} memory assessments.</p>
-        {decision.snapshot&&<p><b>Pool trade observed:</b> {new Date(decision.snapshot.marketAt).toISOString()} · {marketSources(decision.snapshot).price}. {decision.snapshot.metricsSource??'Market'} metrics received {new Date(decision.snapshot.metricsReceivedAt??decision.snapshot.observedAt).toISOString()}.</p>}
+        {decision.snapshot&&<p><b>{decision.snapshot.source === "gmgn-paper" ? "Indicative paper receipt:" : "Pool trade observed:"}</b> {new Date(decision.snapshot.source === "gmgn-paper" ? decision.snapshot.observedAt : decision.snapshot.marketAt).toISOString()} · {marketSources(decision.snapshot).price}. {decision.snapshot.metricsSource??'Market'} metrics received {new Date(decision.snapshot.metricsReceivedAt??decision.snapshot.observedAt).toISOString()}.</p>}
         <GeckoAttribution snapshot={decision.snapshot}/>
         {decision.memories.length>0&&<div className="studio-receipt-links">{decision.memories.map((m,i)=><span key={m.pageId} title={m.pageId}>M{i+1} · {m.pageId}</span>)}</div>}
         <p><b>Memory write now:</b> {episode?`${episode.capture.status} · ${episode.summary}`:decision.memoryCapture??'No linked memory episode'}</p>

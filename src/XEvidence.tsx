@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import type { EvidenceAssessment, XResearch } from "./types.js";
 import { AssessmentCard } from "./DecisionBreakdown.js";
+import { NarrativeEvidence } from './NarrativeEvidence.js';
 const utc = (n: number) => new Date(n).toISOString().slice(0, 19).replace("T", " ") + " UTC";
 export function XEvidence({ research, now, assessments }: { research?: XResearch; now: number; assessments?: EvidenceAssessment[] }) {
   if (!research) return <>
@@ -9,9 +10,12 @@ export function XEvidence({ research, now, assessments }: { research?: XResearch
   </>;
   const label = { ready: "Cited posts", no_results: "No matching posts", unverified: "Unusable evidence", error: "Search unavailable" }[research.status];
   return <div className="x-evidence">
+    <NarrativeEvidence research={research} assessments={assessments}/>
+    <h4>Contract-linked X posts</h4>
     <span className={`x-status ${research.status}`}>{label}</span>
     <p>{research.detail}</p>
-    <small>Searched {utc(research.collectedAt)} · {research.searchCalls} search receipts</small>
+    <small>Searched {utc(research.collectedAt)} · {research.searchCalls} search receipts in that request</small>
+    {research.delivery && <small>{research.delivery==='fresh' ? 'New Grok request for this assessment.' : research.delivery==='cache' ? 'Reused cached research; no new X request for this assessment.' : 'Shared an in-flight Grok request; no duplicate request.'}</small>}
     {research.sources.map((source, i) => <details className="x-source" key={source.postId} open>
       <summary><span className="evidence-id">X{i + 1}</span> @{source.handle} · {new Date(source.publishedAt).toISOString().slice(11, 16)} UTC</summary>
       <p id={`evidence-X${i + 1}`}><b>Grok summary:</b> {source.summary}</p>
@@ -29,7 +33,7 @@ export function XEvidence({ research, now, assessments }: { research?: XResearch
       <p>{research.model} via OpenRouter · {research.rejectedCount} results rejected</p>
       {research.requestId && <p>Request: <code>{research.requestId}</code></p>}
       {research.costUsd !== undefined && <p>Provider-reported request cost: ${research.costUsd.toFixed(5)}. Not a cost cap.</p>}
-      <p>{now >= research.expiresAt ? "Historical evidence; a new inspection refreshes expired research." : "Reusable for up to five minutes. This is the evidence captured for this decision."}</p>
+      <p>{now >= research.expiresAt ? "Historical evidence; a new inspection refreshes expired research." : "Successful evidence is reusable for up to five minutes. New/bonding tokens with no CA posts refresh after 90 seconds when assessed again."}</p>
       <p>Citations do not verify a claim. Grok reports the text and contract association; code checks citations, address matching and post-ID timestamps. Search is not an exhaustive measure of X activity.</p>
     </details>
   </div>;

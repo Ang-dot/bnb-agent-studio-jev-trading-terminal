@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { MonitorService } from "./monitor.js";
-import type { LaunchFeedState, Launch } from "../src/launches.js";
+import type { LaunchFeedState, Launch, Graduation } from "../src/launches.js";
 import type { Decision } from "../src/types.js";
 import type { LaunchActivity } from "../src/monitoring.js";
 const epoch = 1_790_000_000_000;
@@ -36,7 +36,7 @@ function setup() {
         },
       ] as LaunchActivity[],
   );
-  const verify = vi.fn(async (_launch?: Launch) => ({
+  const verify = vi.fn(async (_launch?: Launch): Promise<Graduation> => ({
     token,
     status: "gmgn_reported" as const,
     pool: `0x${"b".repeat(40)}`,
@@ -76,6 +76,11 @@ function setup() {
   };
 }
 describe("automatic non-executing monitor", () => {
+  it('assesses a new launch before graduation when an indicative paper market is available',async()=>{
+    const x=setup();x.feed.launches=[{...launch,stage:'new',createdAt:epoch-1000,reportedGraduatedAt:null}];
+    x.verify.mockResolvedValue({token,status:'paper_launch',pool:`launch:${token}`,checkedAt:epoch,detail:'Indicative'});
+    await x.service.tick();expect(x.assess).toHaveBeenCalledOnce();expect(x.service.state.items[0].status).toBe('monitoring');
+  });
   it("persists pause and attempt cooldown across restart", async () => {
     const dir = await mkdtemp(join(tmpdir(), "jev-monitor-test-"));
     try {
@@ -103,7 +108,7 @@ describe("automatic non-executing monitor", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
-  it("caps rolling-hour attempts even when many tokens qualify", async () => {
+  it("keeps scheduling beyond sixty hourly attempts; actual model calls have their own pacer", async () => {
     const x = setup();
     x.feed.launches = Array.from({ length: 61 }, (_, i) => ({
       ...launch,
@@ -128,8 +133,8 @@ describe("automatic non-executing monitor", () => {
       detail: "test",
     }));
     for (let i = 0; i < 61; i++) await x.service.tick();
-    expect(x.assess).toHaveBeenCalledTimes(60);
-    expect(x.service.state.error).toContain("budget reached");
+    expect(x.assess).toHaveBeenCalledTimes(61);
+    expect(x.service.state.error).toBeNull();
   });
   it("calls assessment after thresholds and independent graduation, then cools down", async () => {
     const { service, assess, advance } = setup();

@@ -9,7 +9,7 @@ import {
   type SeriesMarker,
 } from "lightweight-charts";
 import type { Candle, Decision, Position } from "./types.js";
-import { PAPER_POLICY as paper } from "./paper-settings.js";
+import { PAPER_POLICY as paper, paperCosts } from "./paper-settings.js";
 import { decisionMarker } from "./terminal-insights.js";
 const noAnnotations: { time: number; label: string; color: string }[] = [];
 export function Chart({
@@ -66,11 +66,15 @@ export function Chart({
     });
     price.setData(candles.map((c) => ({ ...c, time: c.time as UTCTimestamp })));
     if(position&&position.quantity>0) {
-      const breakEven=position.costUsd/position.quantity/((1-paper.slippageBps/10000)*(1-paper.feeBps/10000));
-      const levels=[{value:breakEven,label:"Paper breakeven",color:"#657084"},{value:breakEven*.75,label:"Stop −25% · paper",color:"#c45b55"},
-        ...((position.takeProfits??0)<1?[{value:breakEven*1.5,label:"TP1 +50% · half",color:"#159b73"}]:[]),
-        ...((position.takeProfits??0)<2?[{value:breakEven*2,label:"TP2 +100% · half",color:"#159b73"}]:[]),
-        ...((position.takeProfits??0)>0&&position.peakNetUnitUsd?[{value:position.peakNetUnitUsd*.75/((1-paper.slippageBps/10000)*(1-paper.feeBps/10000)),label:"Runner trail · paper",color:"#bc8513"}]:[])];
+      const costs=paperCosts(position.pool);
+      const factor=(1-costs.slippageBps/10000)*(1-costs.feeBps/10000);
+      const basis=(position.investedUsd??position.costUsd)/(position.acquiredQuantity??position.quantity)/factor;
+      const levels=[{value:basis,label:"Entry basis · net costs",color:"#657084"},
+        {value:basis*(1-paper.stopLossPct/100),label:"Stop −20% · paper",color:"#c45b55"},
+        ...(!position.principalRecovered?[{value:basis*2,label:"2× · recover principal",color:"#159b73"}]:[]),
+        ...((position.takeProfits??0)<2?[{value:basis*3,label:"3× · 15% original",color:"#159b73"}]:[]),
+        ...((position.takeProfits??0)<3?[{value:basis*4,label:"4× · 15% original",color:"#159b73"}]:[]),
+        ...(position.principalRecovered&&position.peakNetUnitUsd?[{value:position.peakNetUnitUsd*(1-paper.trailingPct/100)/factor,label:"Runner trail · paper",color:"#bc8513"}]:[])];
       for(const l of levels) price.createPriceLine({price:l.value,color:l.color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title:l.label});
     }
     price

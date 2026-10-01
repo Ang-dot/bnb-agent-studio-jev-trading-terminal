@@ -51,7 +51,7 @@ export function MonitoringPanel({
                 : "Automatic assessment is paused."}
           </h2>
           <p>
-            GMGN graduation + liquidity + crowd activity → market data →
+            GMGN launch stage + liquidity + crowd activity → market data →
             JEV + memory. Automatic scouting; entries require an armed paper session.
           </p>
         </div>
@@ -63,11 +63,11 @@ export function MonitoringPanel({
       <p className="monitor-queue-summary">{state ? `${state.items.length} screened · ${qualified.length} pass attention gate` : "Loading attention screen…"}</p>
       {state?.error && <p className="auto-warning" role="status">{state.error}</p>}
       <details className="monitor-rulebook"><summary>Monitoring rules & limits</summary><div className="auto-thresholds">
-        <span>Graduated ≤24h</span>
-        <span>Liquidity ≥$10k</span>
-        <span>≥25 holders</span>
-        <span>5m volume ≥$1k</span>
-        <span>≥10 swaps / 5m</span>
+        <span>Created / graduated ≤24h</span>
+        <span>Liquidity ≥$2k</span>
+        <span>≥10 holders</span>
+        <span>5m volume ≥$300</span>
+        <span>≥5 swaps / 5m</span>
         <span>No reported hard-risk flags</span>
       </div>
       <div className="auto-monitor-meta">
@@ -77,7 +77,7 @@ export function MonitoringPanel({
           this session
         </span>
         <span>
-          {state?.attemptsLastHour ?? 0} / 60 attempts per rolling hour · 2m
+          {state?.attemptsLastHour ?? 0} attempts in the last hour · 1m
           recheck cooldown
         </span>
       </div>
@@ -128,7 +128,7 @@ export function MonitoringPanel({
           ? `Last screen ${new Date(state.updatedAt).toLocaleTimeString()}. `
           : ""}
         Experimental attention settings, not validated alpha. GMGN’s bounded
-        launch/rank feeds can omit tokens; swaps are not unique buyers. $20k
+        launch/rank feeds can omit tokens; swaps are not unique buyers. $2k launch / $5k DEX
         paper-entry floor and model/evidence checks remain separate. Pausing monitoring also pauses paper execution; an already-sent request may finish.
       </small>
       </details>

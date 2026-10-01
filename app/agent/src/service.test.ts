@@ -57,11 +57,15 @@ describe('private Studio HTTP assessment boundary',()=>{
     await service.close();await expect(service.runner.assess(pool,undefined,guard)).rejects.toThrow('Agent Studio');
     expect(work).not.toHaveBeenCalled();
   });
-  it('keeps a bounded request budget even when work returns a skipped assessment',async()=>{
-    const work=fixtureWork();const service=await startAssessmentService({work,authToken:token,maxPerHour:1});stops.push(service.close);
+  it('paces skipped request envelopes for one minute without an hourly lockout',async()=>{
+    let now=Date.now();vi.spyOn(Date,'now').mockImplementation(()=>now);
+    const work=fixtureWork();const service=await startAssessmentService({work,authToken:token,maxPerMinute:1});stops.push(service.close);
     await service.runner.assess(pool,undefined,guard);
     await expect(service.runner.assess(pool,undefined,guard)).rejects.toThrow('Agent Studio');
     expect(work).toHaveBeenCalledOnce();
+    now+=60000;
+    await service.runner.assess(pool,undefined,guard);
+    expect(work).toHaveBeenCalledTimes(2);
   });
   it('does not run a second job concurrently or continue after cancellation',async()=>{
     const entered=deferred(),release=deferred();

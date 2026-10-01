@@ -60,6 +60,7 @@ function setup() {
     marketAt: Date.now() - 1000,
     source: "bitquery",
     candleId: "fixture-candle",
+    entrySetup:{token:pool.token,observedAt:Date.now(),source:"GMGN",marketCapUsd:20000,rangeLowUsd:null,distanceFromLowPct:null,candleFrom:null,candleTo:null},
   };
   vi.spyOn(providers, "pool").mockResolvedValue(pool);
   const research: XResearch = {
@@ -96,6 +97,80 @@ function setup() {
   return { engine, store, providers, research, retiredSecurity };
 }
 describe("autonomous paper loop with mocked providers", () => {
+  it('skips repeated market minutes before X research or JEV',async()=>{
+    const {store,providers,engine}=setup();
+    try{
+      await engine.cycle(pool.address);await engine.cycle(pool.address);
+      expect(providers.research).toHaveBeenCalledOnce();expect(providers.judge).toHaveBeenCalledOnce();
+    }finally{store.close();}
+  });
+  it('refreshes the market again after X and fills from the refreshed mark',async()=>{
+    const {store,providers,engine}=setup();
+    try{
+      const original=await providers.snapshot(pool);
+      vi.mocked(providers.snapshot).mockResolvedValueOnce({...original,priceUsd:1,candleId:'before-X'})
+        .mockResolvedValue({...original,priceUsd:1.2,candleId:'after-X'});
+      await store.mutate(s=>{s.running=true;s.approvedPools=[pool.address];});await engine.cycle();
+      const state=await store.read();
+      expect(state.decisions[0].snapshot?.candleId).toBe('after-X');
+      expect(state.ledger.fills[0].priceUsd).toBeCloseTo(1.2*1.005);
+      expect(providers.snapshot).toHaveBeenLastCalledWith(pool,{entryContext:true});
+    }finally{store.close();}
+  });
+  it('charges pacing only at JEV, retries denied minutes, and identifies inventory calls',async()=>{
+    const {store,providers}=setup(),reserve=vi.fn(()=>false);
+    const work=createAssessmentWork({store,providers,reserveModelCall:reserve});
+    const engine=new Engine(store,providers,{assess:(pool,monitoring,guard)=>work({requestId:randomUUID(),pool,monitoring},guard)});engine.pools=[pool];
+    try{
+      await engine.cycle(pool.address);
+      expect(reserve).toHaveBeenLastCalledWith(false);expect(providers.judge).not.toHaveBeenCalled();
+      expect((await store.read()).decisions[0].reasons[0]).toContain('pacing limit');
+      reserve.mockReturnValue(true);await engine.cycle(pool.address);
+      expect(providers.judge).toHaveBeenCalledOnce();expect(reserve).toHaveBeenCalledTimes(2);
+      await engine.cycle(pool.address);expect(reserve).toHaveBeenCalledTimes(2);
+      const snap=await providers.snapshot(pool);vi.mocked(providers.snapshot).mockResolvedValue({...snap,candleId:'new-inventory-minute'});
+      await store.mutate(s=>{s.ledger.positions=[{pool:pool.address,token:pool.token,name:pool.name,quantity:25,costUsd:25,openedAt:1}];});
+      await engine.cycle(pool.address);expect(reserve).toHaveBeenLastCalledWith(true);
+    }finally{store.close();}
+  });
+  it('does not consume model capacity when X research fails',async()=>{
+    const {store,providers,research}=setup(),reserve=vi.fn(()=>true);
+    try{
+      vi.mocked(providers.research).mockResolvedValue({...research,status:'error'});
+      const work=createAssessmentWork({store,providers,reserveModelCall:reserve});
+      expect((await work({requestId:randomUUID(),pool},{assertActive:async()=>{}})).outcome).toBe('skipped');
+      expect(reserve).not.toHaveBeenCalled();expect(providers.judge).not.toHaveBeenCalled();
+    }finally{store.close();}
+  });
+  it.each([false,true])('fills unresolved rivalry at probe size and CA-supported differentiation normally (supported=%s)',async supported=>{
+    const {store,providers,engine,research}=setup();
+    try{
+      const snap=await providers.snapshot(pool),now=Date.now();
+      vi.mocked(providers.snapshot).mockResolvedValue({...snap,entrySetup:{...snap.entrySetup!,competingTickers:2}});
+      const unknown={verdict:'unknown' as const,summary:'Not established',evidenceIds:[]};
+      research.narrative={version:'narrative-v1',status:'ready',metadata:{token:pool.token,name:'Fixture',symbol:'FIXTURE',description:'Fixture narrative',reportedXHandle:null,source:'GMGN',requestedAt:now,receivedAt:now},
+        angle:'Fixture',themeSources:[],findings:{fit:unknown,catalyst:unknown,timing:unknown,community:unknown,kol:unknown,promotion:unknown,
+          originality:supported?{verdict:'supports',summary:'Token-specific differentiation',evidenceIds:['X1']}:unknown},spreadSample:{posts:1,authors:1,largestAuthorShare:1},issues:[]};
+      await store.mutate(s=>{s.running=true;s.approvedPools=[pool.address];});await engine.cycle();
+      const state=await store.read();expect(state.ledger.fills).toHaveLength(1);
+      expect(state.ledger.positions[0].costUsd).toBeCloseTo((supported?50:25)*1.003);
+    }finally{store.close();}
+  });
+
+  it('fills a pre-graduation paper position through assessment without requiring a DEX provider',async()=>{
+    const {store,providers,engine}=setup();const now=Date.now(),id=`launch:${pool.token}`;
+    const q={kind:'launch-indicative' as const,token:pool.token,platform:'flap' as const,stage:'new' as const,observedAt:now,providerAsOf:null,riskFlags:[],
+      activity:{token:pool.token,observedAt:now,volume5mUsd:500,swaps5m:10,buys5m:7,sells5m:3,riskFlags:[]}};
+    const launchPool={...pool,address:id,launchQuote:q};
+    engine.pools=[launchPool];vi.mocked(providers.pool).mockResolvedValue(launchPool);
+    const s=await providers.snapshot(pool);
+    vi.mocked(providers.snapshot).mockResolvedValue({...s,pool:id,source:'gmgn-paper',launchQuote:q,marketAt:0,observedAt:now});
+    providers.statuses.set('Bitquery',{name:'Bitquery',state:'missing',detail:'Not needed for indicative simulation'});
+    await store.mutate(s=>{s.running=true;s.approvedPools=[id];});await engine.cycle();
+    const state=await store.read();expect(state.ledger.fills).toHaveLength(1);
+    expect(state.ledger.fills[0]).toMatchObject({priceSource:'gmgn-paper',priceUsd:1.03});
+    expect(state.ledger.positions[0].costUsd).toBe(25.25);store.close();
+  });
   it('delivers the provider assessment over Studio HTTP before a paper fill and memory capture', async()=>{
     const {store,providers}=setup();
     const service=await startAssessmentService({work:createAssessmentWork({store,providers})});
@@ -106,7 +181,7 @@ describe("autonomous paper loop with mocked providers", () => {
       const state=await store.read(),d=state.decisions[0];
       expect(state.ledger.fills).toHaveLength(1);
       expect(d.assessmentReceipt).toMatchObject({service:'BNB Agent Studio',outcome:'completed',transport:'private-http'});
-      expect(d.assessmentReceipt?.stages.map(s=>s.name)).toEqual(['Grok / X','GMGN market pool','Bitquery','Supporting research','Living Brain','JEV']);
+      expect(d.assessmentReceipt?.stages.map(s=>s.name)).toEqual(['Market preflight','Grok / X','GMGN market observation','Bitquery','Supporting research','Living Brain','JEV']);
       expect(providers.capture).toHaveBeenCalledWith(expect.objectContaining({assessmentReceipt:d.assessmentReceipt,status:'executed'}));
       expect(service.info().completedRequests).toBe(1);
     } finally {await service.close();store.close();}
@@ -278,7 +353,7 @@ describe("autonomous paper loop with mocked providers", () => {
     expect(providers.research).toHaveBeenCalledWith(pool);
     expect(
       vi.mocked(providers.research).mock.invocationCallOrder[0],
-    ).toBeLessThan(vi.mocked(providers.snapshot).mock.invocationCallOrder[0]);
+    ).toBeLessThan(vi.mocked(providers.snapshot).mock.invocationCallOrder[1]);
     expect(providers.judge).toHaveBeenCalledWith(
       expect.objectContaining({ token: pool.token }),
       [],

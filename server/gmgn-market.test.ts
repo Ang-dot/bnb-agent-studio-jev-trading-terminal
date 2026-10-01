@@ -11,6 +11,13 @@ const fixture = () => ({
 });
 
 describe('GMGN market adapter', () => {
+  it('retains contract-bound metadata from exact GMGN fields, with unknown descriptions left null', () => {
+    const p = parseGmgnMarket({...fixture(), link: {description: 'A lunar meme', twitter_username: '@MoonFixture'}}, token, at, at + 1000);
+    expect(p.narrativeMetadata).toEqual({token, name: 'Fixture', symbol: 'TEST', description: 'A lunar meme', reportedXHandle: 'MoonFixture', source: 'GMGN', requestedAt: at, receivedAt: at + 1000});
+    expect(parseGmgnMarket(fixture(), token, at, at).narrativeMetadata?.description).toBeNull();
+    expect(parseGmgnMarket({...fixture(), description: 'Wrong field', link: {description: {}, twitter_username: 'https://evil.invalid'}}, token, at, at).narrativeMetadata).toMatchObject({description: null, reportedXHandle: null});
+    expect(parseGmgnMarket({...fixture(), link: {description: 'x'.repeat(2000)}}, token, at, at).narrativeMetadata?.description).toHaveLength(1600);
+  });
   it('resolves exact identities, keeps token metrics distinct, and never invents market time', () => {
     const p = parseGmgnMarket(fixture(), token, at, at + 1000);
     expect(p).toMatchObject({address: pool, token, liquidityUsd: 20000, change1h: 25, change24h: 100, buys: 30,

@@ -8,7 +8,7 @@ const postUrl = (at = now - 60000) =>
   `https://x.com/fixture/status/${(BigInt(at - 1288834974657) << 22n).toString()}`;
 function response(posts = [{ url: postUrl(), summary: "A promotional claim, not verified adoption.", identityExcerpt: `BSC CA: ${token}` }]) {
   return {
-    id: "test-request", model: "x-ai/grok-4.7", status: "completed", usage: { cost: 0.01 },
+    id: "test-request", model: "x-ai/grok-4.3", status: "completed", usage: { cost: 0.01 },
     output: [
       { type: "web_search_call", status: "completed", action: { type: "search", query: token } },
       { type: "message", role: "assistant", content: [{
@@ -69,8 +69,9 @@ describe("X search transport", () => {
     const fetchImpl = vi.fn(async () => Response.json(response()));
     const client = new XResearchClient({ OPENROUTER_API_KEY: "fixture-only" }, fetchImpl, () => clock);
     const [first, second] = await Promise.all([client.search(token), client.search(token)]);
-    expect(first).toEqual(second);
-    await client.search(token);
+    expect(first.delivery).toBe('fresh');expect(second).toEqual({...first,delivery:'shared'});
+    expect((await client.search(token)).delivery).toBe('cache');
+    expect(client.usage()).toMatchObject({providerRequests:1,acceptedSearchReceipts:1,reportedCostUsd:.01,cacheHits:1,coalesced:1,failures:0});
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const init = (fetchImpl.mock.calls as unknown[][])[0][1] as RequestInit;
     const body = JSON.parse(init.body as string);
@@ -81,6 +82,36 @@ describe("X search transport", () => {
     await client.search("0x" + "3".repeat(40));
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
+  it("refreshes early no-CA results after ninety seconds while keeping successful CA research for five minutes", async()=>{
+    let clock=now;
+    const fetchImpl=vi.fn(async()=>Response.json(response([])));
+    const client=new XResearchClient({OPENROUTER_API_KEY:'fixture-only'},fetchImpl,()=>clock);
+    const first=await client.search(token,undefined,{earlyLaunch:true});
+    expect(first.refreshAt).toBe(now+90000);
+    clock+=89999;expect((await client.search(token,undefined,{earlyLaunch:true})).collectedAt).toBe(now);
+    clock++;expect((await client.search(token,undefined,{earlyLaunch:true})).delivery).toBe('fresh');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const regular=new XResearchClient({OPENROUTER_API_KEY:'fixture-only'},vi.fn(async()=>Response.json(response())),()=>clock);
+    const withCA=await regular.search(token,undefined,{earlyLaunch:true});
+    expect(withCA.refreshAt).toBe(clock+300000);
+    clock+=90000;expect((await regular.search(token,undefined,{earlyLaunch:true})).delivery).toBe('cache');
+  });
+  it("backs failures off for 1, 2, 4 and 5 minutes and resets after recovery",async()=>{
+    let clock=now;
+    const fetchImpl=vi.fn(async()=>new Response('unavailable',{status:503}));
+    const client=new XResearchClient({OPENROUTER_API_KEY:'fixture-only'},fetchImpl,()=>clock);
+    for(const [index,delay] of [60000,120000,240000,300000].entries()){
+      const result=await client.search(token,undefined,{earlyLaunch:true});
+      expect(result).toMatchObject({status:'error',delivery:'fresh',refreshAt:clock+delay});
+      clock+=delay-1;expect((await client.search(token,undefined,{earlyLaunch:true})).delivery).toBe('cache');
+      expect(fetchImpl).toHaveBeenCalledTimes(index+1);clock++;
+    }
+    fetchImpl.mockImplementation(async()=>Response.json(response()));
+    expect((await client.search(token)).status).toBe('ready');clock+=300000;
+    fetchImpl.mockImplementation(async()=>new Response('unavailable',{status:503}));
+    expect((await client.search(token)).refreshAt).toBe(clock+60000);
+    expect(client.usage()).toMatchObject({providerRequests:6,failures:5,acceptedSearchReceipts:1});
+  });
   it("sanitizes upstream failures and applies a retry cooldown without returning old evidence", async () => {
     const fetchImpl = vi.fn(async () => new Response("SECRET upstream body", { status: 401 }));
     const client = new XResearchClient({ OPENROUTER_API_KEY: "fixture-only" }, fetchImpl, () => now);
@@ -88,7 +119,8 @@ describe("X search transport", () => {
     expect(result.status).toBe("error");
     expect(result.detail).toContain("401");
     expect(JSON.stringify(result)).not.toContain("SECRET");
-    await client.search(token);
+    expect((await client.search(token)).delivery).toBe('cache');
+    expect(client.usage()).toMatchObject({providerRequests:1,acceptedSearchReceipts:0,reportedCostUsd:0,cacheHits:1,coalesced:0,failures:1});
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });

@@ -8,7 +8,7 @@ The live launch and inventory assessment path uses `@bnbagent/studio-runtime` **
 | --- | --- |
 | Studio runtime | HTTP work serving, FREE-mode dispatch and work timeout. No payment or settlement happens. |
 | Custom work hook | X research, refreshed GMGN context, same-pool GeckoTerminal trade price, archived supporting evidence, Living Brain recall, JEV typed assessment. |
-| Application adapter | Loopback binding, per-boot backend credential, one-use admission tickets, response correlation/integrity, cancellation, one in-flight task and 60-attempt/hour budget. These are not stock FREE-mode security features. |
+| Application adapter | Loopback binding, per-boot backend credential, one-use admission tickets, response correlation/integrity, cancellation, one in-flight task and 60-envelope/minute pacing per edition. Actual JEV calls share a separate 30/minute pacer, including ten places reserved for inventory. These are not stock FREE-mode security features. |
 | Paper engine | Current session and admission checks, policy, sizing, deduplication and atomic ledger mutation. Code exits remain independent of Studio/JEV. |
 | Memory journal | Durable recording after the execution outcome, asynchronous Living Brain ingestion, follow-up observations and later recall links. |
 | SDK | Chain constants, draft ERC-8004 metadata and unsigned Intent/executor boundary. No registered identity, commerce job or live swap is claimed. |

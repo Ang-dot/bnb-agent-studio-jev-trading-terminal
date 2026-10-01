@@ -2,6 +2,7 @@ import type { MonitorTrigger } from "./monitoring.js";
 import type { SupportingEvidence } from "./enrichment.js";
 import type { ResearchInput } from "./research-input.js";
 import type { MemoryEpisode } from "./memory.js";
+import type { NarrativeResearch, TokenNarrativeMetadata } from './narrative.js';
 export type Action = "buy" | "sell" | "hold";
 export interface Pool {
   address: string;
@@ -12,16 +13,24 @@ export interface Pool {
   priceUsd: number;
   liquidityUsd: number;
   volume24h: number;
-  change1h: number;
-  change24h: number;
-  buys: number;
-  sells: number;
+  change1h: number | null;
+  change24h: number | null;
+  buys: number | null;
+  sells: number | null;
   discoveredAt: number;
   url: string;
+  launchQuote?: LaunchQuote;
+  narrativeMetadata?: TokenNarrativeMetadata;
   marketData?: {
     source: 'GMGN'; requestedAt: number; receivedAt: number;
     providerAsOf: null; priceScope: 'token'; metricsScope: 'token';
   };
+}
+// An observed token mark for paper simulation; never a DEX pool or executable quote.
+export interface LaunchQuote {
+  kind: 'launch-indicative'; token: string; platform: 'flap' | 'fourmeme';
+  stage: 'new' | 'bonding' | 'graduated_reported'; observedAt: number;
+  providerAsOf: null; riskFlags: string[]; activity?: import('./monitoring.js').LaunchActivity;
 }
 export interface Candle {
   time: number;
@@ -31,7 +40,15 @@ export interface Candle {
   close: number;
   volume: number;
 }
+export interface EntrySetup {
+  competingTickers?: number;
+  token: string; observedAt: number; marketCapUsd: number | null;
+  rangeLowUsd: number | null; distanceFromLowPct: number | null;
+  candleFrom: number | null; candleTo: number | null;
+  source: 'GMGN';
+}
 export interface Snapshot {
+  entrySetup?: EntrySetup;
   position?: { quantity: number; costUsd: number; returnPct: number; takeProfits: number };
   monitoring?: MonitorTrigger;
   pool: string;
@@ -40,12 +57,13 @@ export interface Snapshot {
   priceUsd: number;
   liquidityUsd: number;
   volume24h: number;
-  change1h: number;
-  buyCount: number;
-  sellCount: number;
+  change1h: number | null;
+  buyCount: number | null;
+  sellCount: number | null;
   observedAt: number;
   marketAt: number;
-  source: "bitquery" | "geckoterminal" | "coingecko";
+  source: "bitquery" | "geckoterminal" | "coingecko" | "gmgn-paper";
+  launchQuote?: LaunchQuote;
   tradeEvidence?: {
     kind:'pool-trade';network:'bsc';pool:string;token:string;
     txHash:string;blockNumber:number;requestedAt:number;receivedAt:number;
@@ -104,7 +122,14 @@ export interface XSource {
   summary: string;
   identityExcerpt: string;
 }
+export interface XResearchUsage {
+  since: number; providerRequests: number; acceptedSearchReceipts: number;
+  reportedCostUsd: number; cacheHits: number; coalesced: number; failures: number;
+}
 export interface XResearch {
+  delivery?: 'fresh' | 'cache' | 'shared';
+  refreshAt?: number;
+  narrative?: NarrativeResearch;
   failureKind?: "timeout" | "http" | "validation" | "network" | "configuration";
   token: string;
   status: "ready" | "no_results" | "unverified" | "error";
@@ -120,6 +145,10 @@ export interface XResearch {
   costUsd?: number;
 }
 export interface Position {
+  investedUsd?: number;
+  acquiredQuantity?: number;
+  realizedProceedsUsd?: number;
+  principalRecovered?: boolean;
   peakNetUnitUsd?: number;
   takeProfits?: number;
   entries?: number;
@@ -132,6 +161,10 @@ export interface Position {
   openedAt: number;
 }
 export interface Fill {
+  priceSource?: Snapshot['source'];
+  launchQuote?: LaunchQuote;
+  modeledFeeBps?: number;
+  modeledSlippageBps?: number;
   reason?: string;
   fraction?: number;
   id: string;
@@ -236,6 +269,7 @@ export interface AgentState {
   lastCycleAt: number | null;
 }
 export interface TerminalState extends AgentState {
+  xResearchUsage?: XResearchUsage;
   edition?: 'kbw' | 'token2049';
   memoryProvider?: 'MEM9' | 'Living Brain';
   workerActive?: boolean;

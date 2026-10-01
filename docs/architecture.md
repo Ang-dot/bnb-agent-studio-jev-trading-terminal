@@ -2,8 +2,8 @@
 
 ## Decision flow
 
-1. **Observe:** GMGN snapshots populate Flap/Four.meme discovery and charts. Fresh graduation reports enter an attention screen, not automatic entry permission.
-2. **Collect:** Qualified tokens receive contract-bound X research, matching-pool observations and bounded creator/holder/trader/flow/depth evidence. Preserve identity, receipt times and missing fields.
+1. **Observe:** GMGN snapshots populate Flap/Four.meme discovery and charts. Fresh new, bonding and graduated launches enter an attention screen, not automatic entry permission.
+2. **Collect:** A market preflight skips already-assessed minutes before X research. After research, refresh the market again so a slow search cannot turn an old quote into a fill. Qualified tokens receive contract-bound X research, matching-pool observations and bounded creator/holder/trader/flow/depth evidence. Preserve identity, receipt times and missing fields.
 3. **Recall:** Mem9 retrieves earlier context for KBW; Living Brain does so for TOKEN2049. No relevant memory is a valid cold start; a failed provider response is not.
 4. **Assess:** JEV returns typed actions and evidence/memory classifications. The UI shows recorded inputs and citations, not private chain-of-thought or proof of source claims.
 5. **Gate and simulate:** Deterministic code checks session, data, capital and inventory before a paper fill. The SDK Intent remains unsigned; live execution is locked.
@@ -13,11 +13,11 @@
 
 JEV combines contextual evidence and recalled observations into a judgment. Code owns arithmetic, permission, freshness, sizing and side effects. Supporting context can alter the model's action; individual evidence classifications are not new hard trading rules.
 
-Each edition's monitor attempts one candidate per 30-second tick, with a two-minute recheck. A shared 60-attempt rolling hourly assessment budget bounds both editions together. Provider latency, missing evidence and cooldowns reduce activity. This is not sub-second end-to-end trading, regardless of inference speed.
+Each edition's monitor attempts one candidate per 30-second tick, with a 60-second token cooldown. The editions can assess independently. There is no 60-per-hour lockout: a shared pacer permits 30 actual JEV starts per rolling minute, reserving ten for held positions. It charges immediately before inference, so duplicate minutes and failed X research do not consume model capacity. Private Studio request envelopes are independently bounded to 60 per minute per edition, with one in flight. Code exits remain outside these assessment limits. Provider latency, missing evidence and cooldowns reduce activity. This is not sub-second end-to-end trading, regardless of inference speed.
 
-Attention thresholds live in `src/monitoring.ts`; execution constants in `src/paper-settings.ts`, enforced by `server/policy.ts` and `server/exits.ts`. Defaults: $2,000 capital, orders up to $50, six positions, $150 remaining cost per token, aggregate cost capped at the smaller of $600 or 30% of initial capital. These are experimental simulation settings.
+Attention thresholds live in `src/monitoring.ts`; execution constants in `src/paper-settings.ts`, enforced by `server/policy.ts` and `server/exits.ts`. Defaults: $2,000 capital, $25 launch/narrative probes or $50 DEX starters, ten positions, $75 launch / $150 DEX remaining cost per token, aggregate cost capped at the smaller of $1,000 or 50% of initial capital. These are experimental simulation settings.
 
-JEV SELL can close inventory. Separate code exits implement stop-loss, staged profit-taking and trailing rules and must not be presented as model judgments. The active monitor trusts GMGN graduation reports, without a separate on-chain migration test.
+JEV SELL can close inventory. Separate code exits implement stop-loss, staged profit-taking and trailing rules and must not be presented as model judgments. The active monitor uses GMGN launch stages, without a separate on-chain migration test. Early positions follow a separate indicative paper path; see [aggressive-paper.md](aggressive-paper.md) for principal recovery, entry location, costs and graduation continuity.
 
 ## Memory writes and recall
 
@@ -31,7 +31,7 @@ Living Brain ingestion is asynchronous. Accepted, compiling, compiled and recall
 
 KBW uses the direct Mem9 API in `server/mem9.ts`. Exact pinned episodes are stored under the dedicated application/agent scope and receive a memory ID. A durable pre-dispatch reference makes uncertain writes reconcilable after restarts. Confirmed storage requires a matching content hash, and later recall attribution requires both that hash and memory ID. Mem9's retrieval score has its own scale; no Living Brain similarity threshold is applied. A missing key or failed search is never substituted with Living Brain results.
 
-`server/edition-runtime.ts` wires separate providers, assessment services, engines, memory journals and monitor records for each edition. Existing TOKEN2049 state is retained. KBW starts in `.data/kbw/` locally or terminal row 2 in Supabase. Both use the same worker lease, market feed, evidence archive and price budget; no historical memory migration occurs.
+`server/edition-runtime.ts` wires separate providers, assessment services, engines, memory journals and monitor records for each edition. Existing TOKEN2049 state is retained. KBW starts in `.data/kbw/` locally or terminal row 2 in Supabase. Both use the same worker lease, market feed, X research cache, evidence archive and price budget; no historical memory migration occurs.
 
 ## Supporting evidence
 

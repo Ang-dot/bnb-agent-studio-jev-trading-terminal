@@ -50,7 +50,7 @@ export class MemoryLoop {
       const episodes=s.memoryEpisodes??=[];
       for(const e of episodes)linkRecall(e,d);
       const snap=d.snapshot;
-      if(!snap||!/^0x[0-9a-f]{40}$/i.test(snap.token)||!fresh(snap.marketAt,now)||!Number.isFinite(snap.priceUsd)||snap.priceUsd<=0)return;
+      if(!snap||!/^0x[0-9a-f]{40}$/i.test(snap.token)||!fresh(snap.source==='gmgn-paper'?snap.observedAt:snap.marketAt,now)||!Number.isFinite(snap.priceUsd)||snap.priceUsd<=0)return;
       const id=hash('episode-v1:'+d.id);
       if(episodes.some(e=>e.id===id))return;
       const signature=hash(JSON.stringify({action:d.judgment?.action??'not_evaluated',status:d.status,stage:snap.monitoring?.kind,assessments:d.judgment?.assessments?.map(a=>[a.id,a.value])}));
@@ -64,10 +64,10 @@ export class MemoryLoop {
       if(episodes.length>=2000)return;
       const summary=d.judgment?`${d.judgment.action.toUpperCase()} · ${d.status==='executed'?'paper fill':'no fill'} · ${d.researchInput?'research context assessed':'market & narrative assessed'}`:`Observed · ${d.reasons[0]??'assessment unavailable'}`;
       const entry:MemoryEpisode={id,kind,token:snap.token,pool:d.pool,name:d.name,createdAt:now,decisionId:d.id,signature,summary,
-        baseline:{priceUsd:snap.priceUsd,marketAt:snap.marketAt,action:d.judgment?.action??'hold',executed:!!d.fill},
+        baseline:{priceUsd:snap.priceUsd,marketAt:snap.source==='gmgn-paper'?null:snap.marketAt,action:d.judgment?.action??'hold',executed:!!d.fill},
         content:{warning,decisionId:d.id,observedAt:now,market:snap,modelAction:d.judgment?.action??null,execution:d.status,summary,
           assessments:d.judgment?.assessments??[],checks:d.checks,fill:d.fill??null,reasons:d.reasons,
-          researchContext:d.researchInput??null,xEvidence:d.research?{status:d.research.status,collectedAt:d.research.collectedAt,sources:d.research.sources}:null,
+          researchContext:d.researchInput??null,xEvidence:d.research?{status:d.research.status,collectedAt:d.research.collectedAt,sources:d.research.sources,narrative:d.research.narrative??null}:null,
           recalledPageIds:d.memories.map(m=>m.pageId)},
         followUps:[5,30].map(minutes=>({minutes,dueAt:now+minutes*60000,status:'waiting'})),capture:blankCapture(now),recalledBy:[]};
       episodes.unshift(entry);
@@ -126,14 +126,14 @@ export class MemoryLoop {
     try {
       const pool=await this.providers.pool(e.pool,e.token);
       const market=await this.providers.snapshot(pool),at=this.clock();
-      if(market.token.toLowerCase()!==e.token.toLowerCase()||market.pool.toLowerCase()!==e.pool.toLowerCase()||!marketExecutable(market,at)||market.marketAt<f.dueAt||at>f.dueAt+grace||!e.baseline)return;
+      if(market.token.toLowerCase()!==e.token.toLowerCase()||market.pool.toLowerCase()!==e.pool.toLowerCase()||!marketExecutable(market,at)||(market.source==='gmgn-paper'?market.observedAt:market.marketAt)<f.dueAt||at>f.dueAt+grace||!e.baseline)return;
       const change=(market.priceUsd/e.baseline.priceUsd-1)*100;
       await this.store.mutate(s=>{const parent=s.memoryEpisodes?.find(x=>x.id===e.id),follow=parent?.followUps.find(x=>x.minutes===f.minutes);if(!parent||!follow||follow.status!=='waiting')return;
         if((s.memoryEpisodes?.length??0)>=2000){follow.status='unavailable';follow.detail='Memory journal storage limit reached.';return;}
         follow.status='observed';
         s.memoryEpisodes!.unshift({id:hash(e.id+':outcome:'+f.minutes),kind:'outcome',token:e.token,pool:e.pool,name:e.name,createdAt:at,decisionId:e.decisionId,signature:e.signature,
           summary:`${f.minutes}m follow-up · ${change>=0?'+':''}${change.toFixed(1)}% gross price · ${e.baseline!.action.toUpperCase()}`,
-          content:{warning,baselineDecisionId:e.decisionId,parentEpisodeId:e.id,horizonMinutes:f.minutes,baseline:e.baseline,marketAt:market.marketAt,observedAt:at,priceSource:market.source,elapsedMinutes:(at-e.createdAt)/60000,priceUsd:market.priceUsd,grossPriceChangePct:change,hypothetical:!e.baseline!.executed,interpretation:'Observed same-pool trade price after an action/inaction; not a fill, foregone profit, correctness score or evidence of causal benefit.'},
+          content:{warning,baselineDecisionId:e.decisionId,parentEpisodeId:e.id,horizonMinutes:f.minutes,baseline:e.baseline,marketAt:market.source==='gmgn-paper'?null:market.marketAt,launchQuote:market.launchQuote,observedAt:at,priceSource:market.source,elapsedMinutes:(at-e.createdAt)/60000,priceUsd:market.priceUsd,grossPriceChangePct:change,hypothetical:!e.baseline!.executed,interpretation:market.source==='gmgn-paper'?'Indicative GMGN token-mark follow-up of a simulated launch position; provider price time unknown. Not an executable return or a causal benefit.':'Observed same-pool trade price after an action/inaction; not a fill, foregone profit, correctness score or evidence of causal benefit.'},
           followUps:[],capture:blankCapture(at),recalledBy:[]});
       });
     }catch{/* Retry while the due window is still open; never manufacture a mark. */}
@@ -147,8 +147,8 @@ export class MemoryLoop {
     const changes=outcomes.map(e=>e.content.grossPriceChangePct as number).sort((a,b)=>a-b);
     await this.store.mutate(s=>{if(s.memoryEpisodes?.some(e=>e.id===id))return;s.memoryEpisodes!.unshift({
       id,kind:'review',token:'bsc',pool:'',name:'BSC session review',createdAt:now,signature:'descriptive-v1',summary:`5 observed outcomes · ${new Set(outcomes.map(e=>e.token)).size} tokens · descriptive review`,
-      content:{warning,episodeIds:outcomes.map(e=>e.id),outcomes:outcomes.map(e=>({token:e.token,summary:e.summary,observedAt:e.createdAt,decisionId:e.decisionId})),medianGrossPriceChangePct:changes[2],sampleSize:5,uniqueTokens:new Set(outcomes.map(e=>e.token)).size,
-        limitations:'Attention-selected, potentially overlapping episodes, not independent trades. Missing outcomes excluded. No control group or validated strategy edge. Preserve individual counterexamples; do not convert this review into an entry rule.'},
+      content:{warning,episodeIds:outcomes.map(e=>e.id),outcomes:outcomes.map(e=>({token:e.token,summary:e.summary,observedAt:e.createdAt,decisionId:e.decisionId,priceSource:e.content.priceSource,interpretation:e.content.interpretation})),medianGrossPriceChangePct:changes[2],sampleSize:5,uniqueTokens:new Set(outcomes.map(e=>e.token)).size,
+        limitations:'Attention-selected, potentially overlapping episodes, not independent trades. Missing outcomes excluded. Indicative launch marks and timestamped pool trades remain distinct in the source records; this median is not executable PnL. No control group or validated strategy edge. Preserve individual counterexamples; do not convert this review into an entry rule.'},
       followUps:[],capture:blankCapture(now),recalledBy:[]});});
   }
 }

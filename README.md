@@ -89,3 +89,5 @@ CI also runs a dependency audit and redacted full-history secret scan. These do 
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 The code license is **not yet selected**. Public visibility alone does not grant an open-source license; add one before announcing an open-source release. Third-party marks and dependencies have separate rights. `private: true` in `package.json` prevents accidental npm publication, not GitHub visibility changes.
+
+Current strategy: [aggressive narrative-first paper trading](docs/aggressive-paper.md), including pre-graduation probes, principal recovery at 2× and staged runners.

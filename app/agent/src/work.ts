@@ -1,3 +1,4 @@
+import { isLaunchPaper } from '../../../src/paper-settings.js';
 import { createHash } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { Decision, AssessmentStage } from '../../../src/types.js';
@@ -25,6 +26,7 @@ export function createAssessmentWork(deps: {
   store: Pick<Store, 'read'>;
   evidence?: (token: string, at: number) => SupportingEvidence | undefined | Promise<SupportingEvidence | undefined>;
   annotate?: MemoryLoop['annotate'];
+  reserveModelCall?: (inventory:boolean)=>boolean;
 }): AssessmentWork {
   return async (job, guard) => {
     const { providers, store } = deps, pool = job.pool;
@@ -49,19 +51,28 @@ export function createAssessmentWork(deps: {
     };
     try {
       await guard.assertActive();
-      const missing = [providers.priceProvider, 'Jev', memoryProvider, 'Grok / X'].filter(name => providers.statuses.get(name)?.state === 'missing');
+      const missing = [...(isLaunchPaper(pool.address) ? [] : [providers.priceProvider]), 'Jev', memoryProvider, 'Grok / X'].filter(name => providers.statuses.get(name)?.state === 'missing');
       if (missing.length) {
         decision.reasons = [`Connect ${missing.join(', ')} to run Jev + memory. No model call or paper fill was made.`];
         return finish('skipped');
       }
-      decision.research = await run('Grok / X', () => providers.research(pool));
+      // Detect an already-assessed market minute before metadata/X work. Refresh again
+      // after research: a slow X request must never age the preflight mark into a fill.
+      const preflight=await run('Market preflight',async()=>{
+        const fresh=await providers.pool(pool.address,pool.token);
+        return {pool:fresh,snapshot:await providers.snapshot(fresh)};
+      });
+      if(preflight.snapshot.pool.toLowerCase()!==pool.address.toLowerCase()||preflight.snapshot.token.toLowerCase()!==pool.token.toLowerCase())throw new Error('Preflight identity mismatch');
+      const preflightId=createHash('sha256').update(`paper-v1:${preflight.snapshot.candleId}`).digest('hex').slice(0,24);
+      if((await store.read()).decisions.some(d=>d.id===preflightId)) return finish('duplicate');
+      decision.research = await run('Grok / X', () => providers.research(preflight.pool));
       if (!['ready', 'no_results'].includes(decision.research.status)) {
         stages[stages.length - 1].status = 'failed';
         decision.reasons = [decision.research.detail, 'X evidence unavailable; no Jev call or execution.'];
         return finish('skipped');
       }
-      const fresh = await run('GMGN market pool', () => providers.pool(pool.address, pool.token));
-      decision.snapshot = await run(providers.priceProvider, () => providers.snapshot(fresh));
+      const fresh = await run('GMGN market observation', () => providers.pool(pool.address, pool.token));
+      decision.snapshot = await run(isLaunchPaper(pool.address) ? 'GMGN indicative paper mark' : providers.priceProvider, () => providers.snapshot(fresh,{entryContext:true}));
       if (decision.snapshot.pool.toLowerCase() !== pool.address.toLowerCase() || decision.snapshot.token.toLowerCase() !== pool.token.toLowerCase())
         throw new Error('Snapshot identity mismatch');
       const state = await store.read();
@@ -91,12 +102,20 @@ export function createAssessmentWork(deps: {
         return deps.annotate ? deps.annotate(memories, decision.memoryReadAt) : memories;
       });
       decision.memoryStatus = decision.memories.length ? `${decision.memories.length} active memories retrieved from ${memoryProvider}` : 'Connected · cold start (no relevant memories)';
-      decision.judgment = await run('JEV', () => decision.researchInput
-        ? providers.judge(decision.snapshot!, decision.memories, decision.research!, decision.researchInput)
-        : providers.judge(decision.snapshot!, decision.memories, decision.research!));
+      decision.judgment = await run('JEV', async()=>{
+        if(deps.reserveModelCall && !deps.reserveModelCall(!!decision.snapshot!.position))
+          throw new Error('JEV pacing limit reached; retry next cycle. Code exits remain active.');
+        return decision.researchInput
+          ? providers.judge(decision.snapshot!, decision.memories, decision.research!, decision.researchInput)
+          : providers.judge(decision.snapshot!, decision.memories, decision.research!);
+      });
       decision.time = Date.now();
       return finish('completed');
     } catch (error) {
+      if(error instanceof Error && error.message==='JEV pacing limit reached; retry next cycle. Code exits remain active.') {
+        decision.id=job.requestId; // No inference consumed this market minute; a later retry can use it.
+        decision.reasons=[error.message];return finish('skipped');
+      }
       decision.reasons = [error instanceof CoinGeckoError ? error.message : error instanceof Error && error.message === 'Monitoring paused or evidence expired before JEV; no new model call.'
         ? error.message : `${stage} request or response validation failed. No fill; retry after fresh evidence arrives.`];
       return finish('skipped');

@@ -1,6 +1,10 @@
 # Market-data boundaries
 
-GMGN is the primary discovery, market-context and chart provider. **GeckoTerminal API** supplies same-pool trade prices with actual block timestamps for paper fills, exits and memory outcome marks. This uses the authenticated Demo on-chain endpoint, not the keyless public API. Bitquery is retained only as an explicitly selectable legacy adapter; there is no automatic fallback to it.
+GMGN is the primary discovery, market-context and chart provider. **GeckoTerminal API** supplies same-pool trade prices with actual block timestamps for DEX paper fills, exits and memory outcome marks. This uses the authenticated Demo on-chain endpoint, not the keyless public API. Bitquery is retained only as an explicitly selectable legacy adapter; there is no automatic fallback to it.
+
+## Indicative launch paper exception
+
+The aggressive profile also supports a distinct `launch:<token>` identity and `gmgn-paper` source for pre-graduation **simulation**. This uses fresh GMGN trenches token marks, with price-as-of unknown (`marketAt=0`), an explicit receipt and higher modeled costs. It is not a fallback DEX price or executable bonding-curve quote. Held launch simulations retain that identity after graduation; memory follow-ups stay labeled indicative with a null trade time. See [the full rules and limits](aggressive-paper.md). The matching-pool requirements below continue to govern DEX positions.
 
 ## What each input means
 
@@ -10,16 +14,16 @@ GMGN is the primary discovery, market-context and chart provider. **GeckoTermina
 | Token-to-pool mapping, liquidity | GMGN token info | Exact `pool.pool_address`, matching `base_address` and biggest-pool identity; Pancake V2/V3 only |
 | Display price, rolling volume/change/counts | GMGN token info | Token-wide context; not an executable pool quote |
 | Candles, including held tokens no longer in the launch feed | GMGN kline | Token-wide; never substituted for a pool trade price |
-| Paper-fill and outcome price | GeckoTerminal latest matching pool trade | Exact BSC pool/token, block time and transaction evidence; freshness checked before use |
+| DEX paper-fill and outcome price | GeckoTerminal latest matching pool trade | Exact BSC pool/token, block time and transaction evidence; freshness checked before use |
 | Creator, holder/trader and flow research | GMGN evidence collector | Existing bounded evidence and caveats unchanged |
 
-The info response uses `pool.address` for the token and `pool.pool_address` for the pool. They are not interchangeable. A held position or memory episode keeps its original pool. If GMGN changes its biggest pool, the original-pool read fails visibly; it is never silently redirected.
+The info response uses `pool.address` for the token and `pool.pool_address` for the pool. They are not interchangeable. A held DEX position or memory episode keeps its original pool. If GMGN changes its biggest pool, the original-pool read fails visibly; it is never silently redirected.
 
 GMGN requests use the existing serialized read lane, cooldown and worker guard. Market reads are single-flight per token and cached for 30 seconds from request start. Cache hits retain original request/receipt timestamps. Missing required metrics, inconsistent identities, unsupported exchanges and overly delayed receipts fail closed; no zero/default or stale fallback is supplied to execution.
 
 GMGN `creation_timestamp`, `open_timestamp` and `migrated_timestamp` are lifecycle times, not price-as-of times. Observed info/pool responses have no verified price-as-of field, so this remains `null`. `Snapshot.observedAt` uses the earliest GMGN/price request start conservatively; `metricsReceivedAt` records receipt. `Snapshot.marketAt` is the actual trade block time. UI and JEV inputs distinguish token-wide metrics from pool-specific price/liquidity. Historical snapshots keep their original provenance.
 
-Memory outcome marks also require a real same-pool trade at or after the due horizon, within the existing sampling window, and within the 90-second freshness bound. Missing marks stay unavailable. Observations with only a GMGN display price have `baseline.marketAt = null` and do not manufacture a trade timestamp.
+DEX memory outcome marks also require a real same-pool trade at or after the due horizon, within the existing sampling window, and within the 90-second freshness bound. Missing marks stay unavailable. Observations with only a GMGN display price have `baseline.marketAt = null` and do not manufacture a trade timestamp.
 
 ## Authenticated pool-trade adapter
 

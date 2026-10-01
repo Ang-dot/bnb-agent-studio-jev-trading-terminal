@@ -32,7 +32,11 @@ describe("automatic attention gate", () => {
     expect(screenLaunch(launch, activity, now).eligible).toBe(true);
     expect(WATCH_POLICY.minLiquidityUsd).toBeLessThan(50000);
   });
-  it("keeps pre-graduation, stale/future, missing and low-activity inputs out", () => {
+  it.each(['new','bonding'] as const)('admits fresh %s launches before graduation', stage=>{
+    expect(screenLaunch({...launch,stage,createdAt:now-60000,reportedGraduatedAt:null},activity,now).eligible).toBe(true);
+    expect(screenLaunch({...launch,stage,createdAt:null,reportedGraduatedAt:null},activity,now).eligible).toBe(false);
+  });
+  it("keeps stale/future, missing and low-activity inputs out", () => {
     for (const change of [
       { stage: "bonding" },
       { reportedGraduatedAt: null },
@@ -41,8 +45,8 @@ describe("automatic attention gate", () => {
       { observedAt: now - 90_001 },
       { observedAt: now + 1 },
       { liquidityUsd: null },
-      { liquidityUsd: 9999 },
-      { holders: 24 },
+      { liquidityUsd: 1999 },
+      { holders: 9 },
       { riskFlags: ["risk"] },
     ])
       expect(
@@ -52,8 +56,8 @@ describe("automatic attention gate", () => {
     for (const change of [
       { volume5mUsd: null },
       { swaps5m: null },
-      { volume5mUsd: 999 },
-      { swaps5m: 9 },
+      { volume5mUsd: 299 },
+      { swaps5m: 4 },
       { observedAt: now - 90_001 },
       { riskFlags: ["wash trading"] },
     ])

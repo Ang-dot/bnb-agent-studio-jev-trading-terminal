@@ -3,14 +3,13 @@ import type { Check } from "./types.js";
 
 // Experimental attention thresholds, NOT execution policy or validated alpha.
 export const WATCH_POLICY = Object.freeze({
-  minLiquidityUsd: 10_000,
-  minHolders: 25,
-  minVolume5mUsd: 1_000,
-  minSwaps5m: 10,
+  minLiquidityUsd: 2_000,
+  minHolders: 10,
+  minVolume5mUsd: 300,
+  minSwaps5m: 5,
   maxGraduationAgeMs: 24 * 60 * 60_000,
   maxAgeMs: 90_000,
-  reassessMs: 2 * 60_000,
-  attemptsPerHour: 60,
+  reassessMs: 60_000,
 });
 export interface LaunchActivity {
   token: string;
@@ -37,20 +36,21 @@ export function screenLaunch(
     n != null && Number.isFinite(n) && n >= floor;
   const amount = (n: number | null | undefined) =>
     n == null ? "unavailable" : `$${Math.round(n).toLocaleString("en-US")}`;
+  const eventAt = l.stage === "graduated_reported" ? l.reportedGraduatedAt : l.createdAt;
   const checks: Check[] = [
     {
-      label: "Graduation reported",
-      pass: l.stage === "graduated_reported",
+      label: "Supported launch stage",
+      pass: ["new", "bonding", "graduated_reported"].includes(l.stage) && ["flap", "fourmeme"].includes(l.platform),
       detail:
-        "We trust fresh GMGN graduation reports for Flap / Four.meme. No independent chain check.",
+        "New, bonding and graduated Flap / Four.meme launches can qualify for aggressive paper trading.",
     },
     {
-      label: "Recent graduate",
+      label: "Recent launch or graduation",
       pass:
-        l.reportedGraduatedAt != null &&
-        l.reportedGraduatedAt <= now &&
-        now - l.reportedGraduatedAt <= p.maxGraduationAgeMs,
-      detail: "Within 24 hours of provider-reported graduation.",
+        eventAt != null &&
+        eventAt <= now &&
+        now - eventAt <= p.maxGraduationAgeMs,
+      detail: "Within 24 hours of creation for new/bonding tokens, or reported graduation for graduates.",
     },
     {
       label: "Fresh feeds",
@@ -59,22 +59,22 @@ export function screenLaunch(
         "Launch and 5-minute activity observations must be ≤90 seconds old; absent ranking coverage is unknown, not zero.",
     },
     {
-      label: "Liquidity ≥ $10k",
+      label: "Liquidity ≥ $2k",
       pass: atLeast(l.liquidityUsd, p.minLiquidityUsd),
       detail: `${amount(l.liquidityUsd)} observed; monitoring floor only. Entry policy is separate.`,
     },
     {
-      label: "Holders ≥ 25",
+      label: "Holders ≥ 10",
       pass: atLeast(l.holders, p.minHolders),
       detail: `${l.holders ?? "Unknown"} holders; holder count does not establish independent buyers.`,
     },
     {
-      label: "5m volume ≥ $1k",
+      label: "5m volume ≥ $300",
       pass: atLeast(activity?.volume5mUsd, p.minVolume5mUsd),
       detail: `${amount(activity?.volume5mUsd)} / 5m, GMGN token-wide activity.`,
     },
     {
-      label: "5m swaps ≥ 10",
+      label: "5m swaps ≥ 5",
       pass: atLeast(activity?.swaps5m, p.minSwaps5m),
       detail: `${activity?.swaps5m ?? "Unknown"} swaps / 5m; trades, not unique wallets.`,
     },

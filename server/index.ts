@@ -1,3 +1,5 @@
+import { AssessmentPacer } from './assessment-pacer.js';
+import { XResearchClient } from './research.js';
 import express from "express";
 import { frontendRoute } from "../src/frontend-route.js";
 import { resolve } from "node:path";
@@ -43,26 +45,23 @@ const editionFetch=(edition:FrontendEdition):typeof fetch=>async(input,init)=>{
 };
 // Market prices and their cache/budget are shared; decisions and memory are isolated.
 const coinGecko = new CoinGeckoTrades({key:process.env.COINGECKO_DEMO_API_KEY??'',fetchImpl:guardedFetch});
+const launches = new LaunchFeed();
+const sharedXResearch = new XResearchClient(process.env,guardedFetch);
 const providerSets = {
-  token2049:new Providers(process.env,editionFetch('token2049'),undefined,{memoryProvider:'living-brain',coinGecko}),
-  kbw:new Providers(process.env,editionFetch('kbw'),undefined,{memoryProvider:'mem9',coinGecko}),
+  token2049:new Providers(process.env,editionFetch('token2049'),undefined,{memoryProvider:'living-brain',coinGecko,launches,xResearch:sharedXResearch}),
+  kbw:new Providers(process.env,editionFetch('kbw'),undefined,{memoryProvider:'mem9',coinGecko,launches,xResearch:sharedXResearch}),
 };
 const sharedProviders=providerSets[[...enabledEditions][0]];
 const evidenceArchive = cloud ?? new EvidenceArchive();
 const evidenceCollector = new EvidenceCollector(evidenceArchive);
-const launches = new LaunchFeed();
 const graduations = new GraduationVerifier(launch =>
   readGraduation(launch, token => sharedProviders.poolForToken(token)),
 );
 const replays = await new ReplayService(launches, graduations, (input) =>
   sharedProviders.track("Jev", () => judgeReplay(input, process.env, guardedFetch)), cloud?.record('replay'),
 ).init();
-let assessmentAttempts:number[]=[];
-const reserveAssessment=()=>{
-  const now=Date.now();assessmentAttempts=assessmentAttempts.filter(at=>now-at<3600000);
-  if(assessmentAttempts.length>=60)return false;
-  assessmentAttempts.push(now);return true;
-};
+const assessmentPacer=new AssessmentPacer();
+const reserveAssessment=(inventory:boolean)=>assessmentPacer.reserve(inventory);
 const runtimes = {} as Record<FrontendEdition,EditionRuntime>;
 for(const edition of ['token2049','kbw'] as const)runtimes[edition]=await createEditionRuntime({
   edition,store:stores[edition],providers:providerSets[edition],worker,launches,graduations,
@@ -73,7 +72,7 @@ for(const edition of ['token2049','kbw'] as const)runtimes[edition]=await create
 });
 const runtimeFor=(res:express.Response)=>res.locals.runtime as EditionRuntime;
 const activeRuntimes=()=>Object.values(runtimes).filter(runtime=>enabledEditions.has(runtime.edition));
-const tickMonitors=async()=>{for(const runtime of activeRuntimes())await runtime.monitor.tick();};
+const tickMonitors=async()=>{await Promise.allSettled(activeRuntimes().map(runtime=>runtime.monitor.tick()));};
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb" }));
@@ -187,9 +186,9 @@ app.post("/api/launches/:token/inspect", async (req, res) => {
   if (!launch)
     return res.status(404).json({ error: "Token is not in launch discovery" });
   const verification = await graduations.verify(launch, true);
-  if (verification.status !== "gmgn_reported" || !verification.pool)
+  if (!["gmgn_reported","paper_launch"].includes(verification.status) || !verification.pool)
     return res.status(409).json({
-      error: "Fresh GMGN graduation and a matching market pool are required before assessment.",
+      error: "Fresh launch paper observations or a graduated market pool are required before assessment.",
     });
   try {
     const pool = await providers.pool(verification.pool, launch.address);
@@ -213,7 +212,7 @@ app.get("/api/candles/:pool", async (req, res) => {
   const {engine}=runtimeFor(res);
   const pool = z
     .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/)
+    .regex(/^(?:launch:)?0x[0-9a-fA-F]{40}$/)
     .parse(req.params.pool)
     .toLowerCase();
   const market = engine.pools.find((p) => p.address === pool);
@@ -240,7 +239,7 @@ app.post("/api/approve", async (req, res) => {
   const {engine,store}=runtimeFor(res);
   const { pool, approved } = z
     .object({
-      pool: z.string().regex(/^0x[0-9a-f]{40}$/),
+      pool: z.string().regex(/^(?:launch:)?0x[0-9a-f]{40}$/),
       approved: z.boolean(),
     })
     .parse(req.body);
@@ -272,7 +271,7 @@ app.post("/api/control", async (req, res) => {
 app.post("/api/evaluate", async (req, res) => {
   const {engine}=runtimeFor(res);
   const { pool } = z
-    .object({ pool: z.string().regex(/^0x[0-9a-f]{40}$/) })
+    .object({ pool: z.string().regex(/^(?:launch:)?0x[0-9a-f]{40}$/) })
     .parse(req.body);
   await engine.cycle(pool);
   res.json({ ok: true });

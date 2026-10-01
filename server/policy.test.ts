@@ -16,6 +16,7 @@ const snapshot: Snapshot = {
   marketAt: now - 1000,
   source: "bitquery",
   candleId: "bar-1",
+  entrySetup:{token:"0x"+"2".repeat(40),observedAt:now,source:"GMGN",marketCapUsd:20000,rangeLowUsd:null,distanceFromLowPct:null,candleFrom:null,candleTo:null},
 };
 const judgment: Judgment = {
   action: "buy",
@@ -57,11 +58,11 @@ describe("paper execution policy", () => {
     expect(marketExecutable(s,now+90001)).toBe(false);
     expect(marketExecutable({...s,source:'geckoterminal'},now)).toBe(false);
   });
-  it("uses six small positions and an aggregate cost budget", () => {
-    expect(PAPER_POLICY).toMatchObject({orderUsd:50,maxPositionUsd:150,maxPositions:6,maxExposureUsd:600,minLiquidityUsd:20000});
+  it("uses ten small positions and an aggregate cost budget", () => {
+    expect(PAPER_POLICY).toMatchObject({orderUsd:50,maxPositionUsd:150,maxPositions:10,maxExposureUsd:1000,minLiquidityUsd:5000});
     const first = applyPaperFill(emptyLedger(), snapshot, "buy", "starter", now);
     expect(first.cashUsd).toBeCloseTo(1949.85);
-    const full = {...emptyLedger(), positions:[{pool:"other",token:"other",name:"OTHER",quantity:600,costUsd:600,openedAt:now}]};
+    const full = {...emptyLedger(), positions:[{pool:"other",token:"other",name:"OTHER",quantity:1000,costUsd:1000,openedAt:now}]};
     expect(evaluatePolicy({...context,ledger:full}).action).toBe("hold");
     expect(()=>applyPaperFill(full,snapshot,"buy","over-budget",now)).toThrow();
   });
@@ -93,10 +94,10 @@ describe("paper execution policy", () => {
     expect(third.positions[0].costUsd).toBeGreaterThan(149.98);
     expect(()=>applyPaperFill(third,{...snapshot,priceUsd:2},"buy","4",now+360000)).toThrow();
   });
-  it("limits six distinct tokens and blocks another pool for the same token",()=>{
+  it("limits ten distinct tokens and blocks another pool for the same token",()=>{
     let ledger=emptyLedger();
-    for(let i=0;i<6;i++) ledger=applyPaperFill(ledger,{...snapshot,pool:"p"+i,token:"t"+i},"buy","e"+i,now);
-    expect(()=>applyPaperFill(ledger,snapshot,"buy","seventh",now)).toThrow();
+    for(let i=0;i<10;i++) ledger=applyPaperFill(ledger,{...snapshot,pool:"p"+i,token:"t"+i},"buy","e"+i,now);
+    expect(()=>applyPaperFill(ledger,snapshot,"buy","eleventh",now)).toThrow();
     const one=applyPaperFill(emptyLedger(),snapshot,"buy","one",now);
     expect(()=>applyPaperFill(one,{...snapshot,pool:"another-pool"},"buy","duplicate-token",now)).toThrow();
   });
