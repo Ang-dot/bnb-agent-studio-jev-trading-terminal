@@ -6,7 +6,7 @@ The reference is [CCPiggy_'s September review](https://x.com/CCPiggy_/status/210
 
 - “Around 20k” is interpreted as **market cap**, with an experimental $15k–$25k zone. It is not a liquidity target. A token can also qualify within 25% of its observed recent low. A measured chase exceeding 100% from that low blocks entry even inside the cap zone.
 - The recent low uses up to 30 minutes of GMGN token candles, with at least three observations spanning two minutes and a last candle within 90 seconds. It is a historical range, not a known bottom. Missing history remains unknown; a fresh cap-zone observation can still qualify.
-- “80% likely” is the author's subjective conviction. JEV's 0.55 probe / 0.65 add confidence floors is an experimental application setting, not an 80% launch probability or promised win rate.
+- “80% likely” is the author's subjective conviction. JEV's probe/add model-score floors is an experimental application setting, not an 80% launch probability or promised win rate.
 - “200% / 300%” means +200% / +300% return (3× / 4×). “Sell 15%” means 15% of the originally acquired tokens at each step, including all pre-recovery adds. These are explicit choices where the post is ambiguous.
 
 ## Entry and hold behavior
@@ -17,7 +17,7 @@ Grok 4.3 researches the exact CA, ticker/name/description fit, cultural hooks or
 
 Same-ticker rivalry alone permits a $25 probe. Accepted CA-linked differentiation can support normal add sizing; cited copycat confusion blocks entries. Every initial order is $25. DEX adds can use $50 with a profitable thesis and existing limits.
 
-JEV selects BUY/SELL/HOLD. Initial probes require confidence ≥0.55, quality ≥1.25/3; adds require ≥0.65 and ≥1.5/3. Material deception/manipulation risk must be ≤0.40. Ordinary promotion and missing facts alone do not establish manipulation. Location, fresh flow and portfolio limits still apply. Healthy winners may HOLD; no trade quota or displayed-PnL objective.
+JEV selects BUY/SELL/HOLD. Initial probes require BUY preference ≥0.55, separate confidence ≥0.40, quality ≥1.25/3; adds require ≥0.65 and ≥1.5/3. Material deception/manipulation risk must be ≤0.40. Ordinary promotion and missing facts alone do not establish manipulation. Location, fresh flow and portfolio limits still apply. Healthy winners may HOLD; no trade quota or displayed-PnL objective.
 
 | Setting | Value |
 | --- | --- |
@@ -46,7 +46,7 @@ A held launch simulation retains its identity and cost basis after graduation, f
 Memory records keep indicative observations distinct from timestamped DEX trades. Five- and thirty-minute follow-ups preserve their source and unknown price time; they do not establish executable returns or causal memory benefit. Real execution remains locked. No deployment or session arming is implied by changing this profile.
 
 ## Active paper revision
-Initial entries are $25 probes (confidence ≥0.55, quality ≥1.25); DEX adds retain $50, ≥0.65 and ≥1.5. Every buy needs supported metadata fit, a coherent cultural angle, accepted CA or theme context and positive fresh 5m flow. News events, known originality and KOL spread are optional. Material-risk score ≤0.40 now concerns concrete deception/manipulation, not ordinary promotion or missing facts. $400 daily realized loss and existing capital/exit limits remain.
+Initial entries are $25 probes (BUY preference ≥0.55, separate confidence ≥0.40, quality ≥1.25); DEX adds retain $50, ≥0.65 and ≥1.5. Every buy needs supported metadata fit, a coherent cultural angle, accepted CA or theme context and positive fresh 5m flow. News events, known originality and KOL spread are optional. Material-risk score ≤0.40 now concerns concrete deception/manipulation, not ordinary promotion or missing facts. $400 daily realized loss and existing capital/exit limits remain.
 
 X output has one schema; valid findings survive unrelated invalid fields with visible diagnostics. Authorless citation URLs are unknown authors; post IDs reconcile handle/i URL forms. Missing GMGN descriptions stay unknown; reported post links are unverified research clues. Up to three promising pre-graduation tokens absent from rankings get explicit token-info 5m reads per activity refresh.
 

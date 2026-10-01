@@ -118,7 +118,7 @@ export function evaluatePolicy(c: PolicyContext): {action: Action; mode:"paper";
         s.launchQuote.activity.observedAt<=c.now && c.now-s.launchQuote.activity.observedAt<=p.maxAgeMs &&
         !s.launchQuote.riskFlags.length && !s.launchQuote.activity.riskFlags.length &&
         (s.launchQuote.activity.volume5mUsd??0)>=300 && (s.launchQuote.activity.swaps5m??0)>=5),"Launch probes require current activity and no reported hard flags; missing data waits."),
-      check("Decision confidence",j.confidence>=(probe?p.probeConfidence:p.confidence),"Experimental threshold: 0.55 for $25 probes; 0.65 for adds. Not a win probability."),
+      check("Decision confidence",probe ? j.confidence>=p.probeConfidence && j.probabilities.buy>=p.probeBuyProbability : j.confidence>=p.confidence,"$25 probes require BUY preference ≥0.55 and separate confidence ≥0.40; adds require confidence ≥0.65. Neither is a win probability."),
       check("Setup quality",j.quality>=(probe?p.probeMinQuality:p.minQuality),"Experimental threshold: 1.25 / 3 for $25 probes; 1.5 for adds."),
       check("Material narrative risk",j.toxic<=p.maxToxic,"Material deception/manipulation risk score at most 0.40; promotional tone and absent evidence alone are not hard risks."),
       check("Daily realized loss",(c.ledger.dailyLoss[new Date(c.now).toISOString().slice(0,10)]??0)<p.dailyLossUsd,"Pause new entries after $400 gross realized losses per UTC day; exits remain available."),

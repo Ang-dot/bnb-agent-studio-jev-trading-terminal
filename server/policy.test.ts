@@ -172,3 +172,12 @@ describe("paper execution policy", () => {
     ).toThrow("No position");
   });
 });
+
+it('allows explicit BUY probes with moderate certainty but rejects weak BUY preference and stricter-add failures',()=>{
+ const exploratory={...judgment,confidence:.44,probabilities:{buy:.63,sell:.03,hold:.34},quality:1.97,toxic:.13};
+ expect(evaluatePolicy({...context,judgment:exploratory}).action).toBe('buy');
+ expect(evaluatePolicy({...context,judgment:{...exploratory,probabilities:{buy:.54,sell:.03,hold:.43}}}).action).toBe('hold');
+ expect(evaluatePolicy({...context,judgment:{...exploratory,confidence:.39}}).action).toBe('hold');
+ const ledger=applyPaperFill(emptyLedger(),snapshot,'buy','starter',now-120000,{probe:true});
+ expect(evaluatePolicy({...context,ledger,snapshot:{...snapshot,priceUsd:1.3,position:{quantity:ledger.positions[0].quantity,costUsd:ledger.positions[0].costUsd,returnPct:25,takeProfits:0}},judgment:exploratory}).action).toBe('hold');
+});
