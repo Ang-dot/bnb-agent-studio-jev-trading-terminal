@@ -122,7 +122,7 @@ export interface Memory {
 export interface XSource {
   url: string;
   postId: string;
-  handle: string;
+  handle: string | null;
   publishedAt: number;
   timestampSource: "post-id";
   summary: string;
@@ -211,6 +211,7 @@ export interface Decision {
   status: "executed" | "held" | "not_evaluated";
   reasons: string[];
   snapshot?: Snapshot;
+  executionSnapshot?: Snapshot;
   research?: XResearch;
   judgment?: Judgment;
   memories: Memory[];
@@ -269,6 +270,7 @@ export interface AgentState {
   revision: number;
   approvedPools: string[];
   running: boolean;
+  paperArmRelease?: string;
   halted: boolean;
   ledger: Ledger;
   decisions: Decision[];

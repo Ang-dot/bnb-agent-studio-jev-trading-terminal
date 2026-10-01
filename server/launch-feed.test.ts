@@ -4,6 +4,7 @@ import {
   parseTrenches,
   parseLaunchCandles,
   parseLaunchActivity,
+  parseTokenActivity,
 } from "./launch-feed.js";
 const address = `0x${"a".repeat(40)}`;
 const row = {
@@ -220,4 +221,15 @@ describe("GMGN discovery boundary", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ time: 1_790_000_000, volume: 5 });
   });
+});
+
+it('supplements ranking gaps with bounded exact-token five-minute activity',async()=>{
+ const now=Date.now(),calls:string[][]=[];
+ const feed=new LaunchFeed(async args=>{calls.push(args);return args[0]==='market'?{code:0,data:{rank:[]}}:
+ {address,price:{address,volume_5m:'400',swaps_5m:8,buys_5m:6,sells_5m:2,volume_1h:'99999'}};});
+ feed.state.launches=parseTrenches({new_creation:[{...row,liquidity:2500,holder_count:20}],near_completion:[],completed:[]},'flap',now);
+ expect((await feed.activity())[0]).toMatchObject({token:address,volume5mUsd:400,swaps5m:8,buys5m:6,sells5m:2});
+ expect(calls.filter(a=>a[0]==='token')).toHaveLength(1);
+ expect(parseTokenActivity({address,price:{address,volume_1h:'99999'}},address,now).volume5mUsd).toBeNull();
+ expect(()=>parseTokenActivity({address,price:{address:'wrong'}},address,now)).toThrow('identity');
 });

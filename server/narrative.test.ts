@@ -85,7 +85,8 @@ describe('narrative identity and evidence boundaries', () => {
     const raw = response(true); raw.output[2].content![0].annotations = [{type: 'url_citation', url: url(2000)}];
     expect(parse(raw).narrative!.themeSources).toEqual([]);
     const noTheme = response(true); noTheme.output[1].status = 'failed';
-    expect(parse(noTheme).narrative!.status).toBe('unavailable');
+    expect(parse(noTheme).narrative!.status).toBe('ready');
+    expect(parse(noTheme).narrative!.findings!.catalyst.verdict).toBe('unknown');
     const noContract = response(true); noContract.output[0].status = 'failed';
     const research = parse(noContract);
     expect(research.status).toBe('unverified'); expect(research.sources).toEqual([]);
@@ -230,4 +231,20 @@ describe('edition-shared X research',()=>{
     expect(a.researchUsage).toEqual(b.researchUsage);
     expect(a.memoryProvider).toBe('MEM9');expect(b.memoryProvider).toBe('Living Brain');
   });
+});
+
+it('does not invent authors for /i citations and matches finding references by post ID',()=>{
+ const raw=response(true);
+ raw.output[2].content![0].annotations=raw.output[2].content![0].annotations.map(a=>({...a,url:a.url.replace('/fixture/','/i/')}));
+ const research=parse(raw);
+ expect(research.sources[0].handle).toBeNull();expect(research.narrative!.themeSources[0].handle).toBeNull();
+ expect(research.narrative!.spreadSample).toEqual({posts:1,authors:0,unknownAuthors:1,largestAuthorShare:null});
+ expect(research.narrative!.findings!.catalyst.evidenceIds).toEqual(['T1']);
+ expect(assessmentPlan([],research).find(s=>s.id==='narrative_spread')!.allowedValues).not.toContain('multiple_voices');
+});
+it('retains valid narrative findings and names invalid fields without inventing replacements',()=>{
+ const research=parse(edit(response(true),r=>{r.narrative.kol={verdict:'supports',summary:'No evidence'};}));
+ expect(research.narrative!.status).toBe('ready');expect(research.narrative!.findings!.fit.verdict).toBe('supports');
+ expect(research.narrative!.findings!.kol).toMatchObject({verdict:'unknown',evidenceIds:[]});
+ expect(research.narrative!.issues.join(' ')).toContain('kol.urls');
 });

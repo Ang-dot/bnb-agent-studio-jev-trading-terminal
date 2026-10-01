@@ -65,3 +65,6 @@ No GoPlus integration or independent migration gate is required for the active l
 DEX paper prices use the selected CoinGecko/GeckoTerminal trade adapter or Bitquery. Launch paper simulations use explicitly indicative GMGN token marks and do not require a DEX price connection. GMGN receipts are not provider price-as-of timestamps. See [the aggressive paper profile](aggressive-paper.md) for the current rules and price boundary.
 
 The default paper profile now admits new/bonding launches before graduation and uses the principal-recovery ladder from [the strategy reference and implementation notes](aggressive-paper.md). Restart the backend to load the changes; deployment and arming remain separate actions.
+
+### Release-scoped paper activation
+`PAPER_ARM_RELEASE_KBW` (or `_TOKEN2049`) is an explicit operator opt-in. A new identifier arms that edition once after the worker lease is acquired, only with monitoring and discovery enabled and no stop latch. The armed state survives worker restarts with a new session identity. Manual pause/stop persists for the same release. Without the variable, startup remains paused. Disabled editions cannot arm. No live execution is enabled.

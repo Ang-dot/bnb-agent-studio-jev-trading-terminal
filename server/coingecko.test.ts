@@ -86,3 +86,13 @@ describe('CoinGecko Demo pool trades',()=>{
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });
+
+it('refreshes the execution price inside the cache window without bypassing the request budget',async()=>{
+ let saved:string|undefined,clock=now;
+ const fetchImpl=vi.fn<typeof fetch>(async()=>Response.json({data:[trade({price_to_in_usd:clock===now?'0.02':'0.021'})]}));
+ const client=new CoinGeckoTrades({key:'fixture',fetchImpl,now:()=>clock,persistence:{read:async()=>saved,write:async v=>{saved=v;}},limits:{minute:2,day:0,month:2}});
+ expect((await client.read(pool,token)).priceUsd).toBe(.02);clock+=1000;
+ expect((await client.read(pool,token)).priceUsd).toBe(.02);
+ expect((await client.read(pool,token,{fresh:true})).priceUsd).toBe(.021);
+ await expect(client.read(pool,token,{fresh:true})).rejects.toThrow('budget');expect(fetchImpl).toHaveBeenCalledTimes(2);
+});

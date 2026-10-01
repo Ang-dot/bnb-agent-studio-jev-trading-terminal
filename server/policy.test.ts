@@ -1,3 +1,4 @@
+import {coherentNarrative,positiveMonitoring} from './paper-fixtures.test-support.js';
 import { describe, it, expect } from "vitest";
 import { evaluatePolicy, applyPaperFill, emptyLedger, PAPER_POLICY, marketExecutable } from "./policy.js";
 import type { Snapshot, Judgment, XResearch } from "../src/types.js";
@@ -16,6 +17,7 @@ const snapshot: Snapshot = {
   marketAt: now - 1000,
   source: "bitquery",
   candleId: "bar-1",
+  monitoring:positiveMonitoring("0x"+"2".repeat(40),now),
   entrySetup:{token:"0x"+"2".repeat(40),observedAt:now,source:"GMGN",marketCapUsd:20000,rangeLowUsd:null,distanceFromLowPct:null,candleFrom:null,candleTo:null},
 };
 const judgment: Judgment = {
@@ -37,6 +39,7 @@ const context = {
   snapshot,
   judgment,
   research: {
+    narrative:coherentNarrative(snapshot.token,now),
     token: snapshot.token, status: "ready", detail: "Fixture", model: "fixture",
     window: { from: now - 86400000, to: now }, collectedAt: now, expiresAt: now + 300000,
     searchCalls: 1, rejectedCount: 0,

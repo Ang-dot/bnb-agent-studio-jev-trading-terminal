@@ -73,7 +73,7 @@ export function createAssessmentWork(deps: {
         return finish('skipped');
       }
       const fresh = await run('GMGN market observation', () => providers.pool(pool.address, pool.token));
-      decision.snapshot = await run(isLaunchPaper(pool.address) ? 'GMGN indicative paper mark' : providers.priceProvider, () => providers.snapshot(fresh,{entryContext:true}));
+      decision.snapshot = await run(isLaunchPaper(pool.address) ? 'GMGN indicative paper mark' : providers.priceProvider, () => providers.snapshot(fresh,{entryContext:true,freshPrice:true}));
       if (decision.snapshot.pool.toLowerCase() !== pool.address.toLowerCase() || decision.snapshot.token.toLowerCase() !== pool.token.toLowerCase())
         throw new Error('Snapshot identity mismatch');
       const state = await store.read();

@@ -42,13 +42,8 @@ export function buyAmount(ledger: Ledger, s: Snapshot, probe = false) {
 export function narrativeProbe(research: XResearch, s: Snapshot, now: number) {
   const n=research.narrative, f=n?.findings, a=s.monitoring?.activity ?? s.launchQuote?.activity;
   return !!n && n.status==='ready' && !!freshNarrativeMetadata(n.metadata,s.token,now) &&
-    !!f && ['fit','catalyst','timing'].every(k=>f[k as 'fit'|'catalyst'|'timing'].verdict==='supports') &&
-    f.originality.verdict!=='cautions' && f.promotion.verdict!=='cautions' &&
-    ['catalyst','timing'].every(k=>f[k as 'catalyst'|'timing'].evidenceIds.some(id=>{
-      const index=/^T([1-9][0-9]*)$/.exec(id);
-      const source=index?n.themeSources[Number(index[1])-1]:undefined;
-      return !!source && source.publishedAt<=now && source.publishedAt>=research.window.from;
-    })) && !!a && a.token===s.token && a.observedAt<=now && now-a.observedAt<=PAPER_POLICY.maxAgeMs &&
+    !!n.angle && !!f && f.fit.verdict==='supports' &&
+    f.originality.verdict!=='cautions' && (research.sources.length>0 || n.themeSources.length>0) && !!a && a.token===s.token && a.observedAt<=now && now-a.observedAt<=PAPER_POLICY.maxAgeMs &&
     !a.riskFlags.length && a.buys5m!=null && a.sells5m!=null && a.buys5m>a.sells5m &&
     (a.volume5mUsd??0)>=300 && (a.swaps5m??0)>=5;
 }
@@ -89,7 +84,7 @@ export function copycatStatus(s: Snapshot, research: XResearch, now: number): 'c
   return tokenSupport ? 'supported' : 'unresolved';
 }
 export const needsProbe = (s: Snapshot, research: XResearch, now: number) =>
-  !research.sources.length || copycatStatus(s,research,now)==='unresolved';
+  !s.position || !research.sources.length || copycatStatus(s,research,now)==='unresolved';
 export interface PolicyContext {
   now: number; approved: boolean; halted: boolean; memoryReady: boolean; ledger: Ledger;
   snapshot: Snapshot; judgment: Judgment; research: XResearch;
@@ -106,7 +101,8 @@ export function evaluatePolicy(c: PolicyContext): {action: Action; mode:"paper";
   ];
   if(j.action==="buy") {
     const early=narrativeProbe(c.research,s,c.now);
-    const amount=buyAmount(c.ledger,s,needsProbe(s,c.research,c.now));
+    const probe=!position || needsProbe(s,c.research,c.now);
+    const amount=buyAmount(c.ledger,s,probe);
     checks.push(
       check("Operator approval",c.approved,"Approved pool or freshly qualified launch in an armed paper session."),
       check("Valid market data",[s.liquidityUsd,s.volume24h,...(s.source==='gmgn-paper'?[]:[s.change1h]),s.buyCount,s.sellCount].every(Number.isFinite),"Missing entry evidence is not a zero."),
@@ -117,14 +113,14 @@ export function evaluatePolicy(c: PolicyContext): {action: Action; mode:"paper";
       check("X research freshness",!!c.research && ["ready","no_results"].includes(c.research.status) && c.research.token===s.token &&
         c.research.searchCalls>0 && c.research.window.to<=c.research.collectedAt && c.research.collectedAt<=c.now &&
         c.research.window.to<=c.now && c.now-c.research.window.to<=300000 && c.research.expiresAt>c.now,"Contract-specific search receipt must be within five minutes."),
-      check("Cited narrative or token context",(c.research?.status==="ready" && c.research.sources.length>0) || early,"Contract-linked source, or a $25 probe with fresh metadata, cited fit/catalyst/timing and positive fresh 5m flow. A ticker alone is insufficient."),
+      check("Cited narrative or token context",early,"Every entry needs a coherent angle, supported ticker/name/description fit, accepted CA or theme context and positive fresh 5m flow. News events and KOL spread are optional; missing fit waits."),
       check("Launch flow and flags",!s.launchQuote || (!!s.launchQuote.activity &&
         s.launchQuote.activity.observedAt<=c.now && c.now-s.launchQuote.activity.observedAt<=p.maxAgeMs &&
         !s.launchQuote.riskFlags.length && !s.launchQuote.activity.riskFlags.length &&
         (s.launchQuote.activity.volume5mUsd??0)>=300 && (s.launchQuote.activity.swaps5m??0)>=5),"Launch probes require current activity and no reported hard flags; missing data waits."),
-      check("Decision confidence",j.confidence>=p.confidence,"Experimental threshold: 0.65, not a win probability."),
-      check("Setup quality",j.quality>=p.minQuality,"Experimental threshold: 1.5 / 3."),
-      check("Toxic narrative",j.toxic<=p.maxToxic,"Evidence risk probability at most 0.40."),
+      check("Decision confidence",j.confidence>=(probe?p.probeConfidence:p.confidence),"Experimental threshold: 0.55 for $25 probes; 0.65 for adds. Not a win probability."),
+      check("Setup quality",j.quality>=(probe?p.probeMinQuality:p.minQuality),"Experimental threshold: 1.25 / 3 for $25 probes; 1.5 for adds."),
+      check("Material narrative risk",j.toxic<=p.maxToxic,"Material deception/manipulation risk score at most 0.40; promotional tone and absent evidence alone are not hard risks."),
       check("Daily realized loss",(c.ledger.dailyLoss[new Date(c.now).toISOString().slice(0,10)]??0)<p.dailyLossUsd,"Pause new entries after $400 gross realized losses per UTC day; exits remain available."),
       check("Cash",c.ledger.cashUsd>=10.03,"At least $10 plus modeled fees for an entry."),
       check("Position ceiling",amount>=10,"Up to $75 per launch-paper token / $150 per DEX token including fees; final add sizes to remaining headroom."),

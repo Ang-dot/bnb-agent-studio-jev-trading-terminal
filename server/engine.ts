@@ -1,3 +1,4 @@
+import { PAPER_POLICY } from "../src/paper-settings.js";
 import { createHash, randomUUID } from "node:crypto";
 import type { Decision, Pool, TerminalState } from "../src/types.js";
 import { Providers } from "./providers.js";
@@ -12,6 +13,7 @@ import { AssessmentBlockedError } from './assessment-signal.js';
 interface Observation {
   context: MonitorTrigger;
   active: () => boolean;
+  refresh?: () => Promise<MonitorTrigger>;
   assessmentBlocker?: () => string | null;
   paper?: boolean;
 }
@@ -144,6 +146,22 @@ export class Engine {
       }
       if (!decision.snapshot || !decision.judgment || !decision.research || decision.pool !== pool.address || decision.snapshot.token !== pool.token)
         throw new Error('Invalid assessment result');
+      let executionFailure:string|undefined;
+      if(decision.judgment.action!=='hold' && allowExecution && (await this.store.read()).running) {
+        stage='Execution market refresh';
+        try {
+          const monitoring=await observation?.refresh?.();
+          const fresh=await this.providers.pool(pool.address,pool.token);
+          const mark=await this.providers.snapshot(fresh,{entryContext:true,freshPrice:true});
+          if(mark.pool!==decision.snapshot.pool || mark.token!==decision.snapshot.token)throw new Error('Execution identity mismatch');
+          mark.monitoring=monitoring??decision.snapshot.monitoring;
+          mark.position=decision.snapshot.position;
+          decision.executionSnapshot=mark;
+          if(Date.now()-decision.time>90000)executionFailure='JEV decision expired during execution refresh; reassess.';
+          if(decision.judgment.action==='buy' && Math.abs(mark.priceUsd/decision.snapshot.priceUsd-1)*100>PAPER_POLICY.maxEntryDriftPct)
+            executionFailure='Price moved more than 5% since JEV assessed; reassess before buying.';
+        } catch {executionFailure='Fresh execution market or admission unavailable; no fill.';}
+      }
       // Reload and evaluate INSIDE the transaction so a stop/pause during an API call wins.
       stage = "Paper ledger";
       await this.store.mutate((s) => {
@@ -159,10 +177,14 @@ export class Engine {
           halted: s.halted,
           ledger: s.ledger,
           memoryReady: true,
-          snapshot: decision.snapshot!,
+          snapshot: decision.executionSnapshot ?? decision.snapshot!,
           judgment: decision.judgment!,
           research: decision.research!,
         });
+        if(executionFailure) {
+          outcome.action='hold';outcome.checks.push({label:'Execution refresh',pass:false,detail:executionFailure});outcome.reasons.push(executionFailure);
+        }
+        const execution=decision.executionSnapshot??decision.snapshot!;
         decision.checks = outcome.checks;
         decision.action = outcome.action;
         decision.reasons = outcome.reasons;
@@ -177,16 +199,16 @@ export class Engine {
           (!observation || observation.active())
         ) {
           decision.intent = proposedSwap(
-            decision.snapshot!,
+            execution,
             outcome.action,
           ) as Record<string, unknown>;
           s.ledger = applyPaperFill(
             s.ledger,
-            decision.snapshot!,
+            execution,
             outcome.action,
             decision.id,
             Date.now(),
-            {probe:outcome.action === "buy" && needsProbe(decision.snapshot!,decision.research!,Date.now())},
+            {probe:outcome.action === "buy" && (!s.ledger.positions.some(p=>p.pool===execution.pool) || needsProbe(execution,decision.research!,Date.now()))},
           );
           decision.status = "executed";
           decision.fill = s.ledger.fills[0];

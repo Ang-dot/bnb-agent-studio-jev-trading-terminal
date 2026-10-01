@@ -8,6 +8,18 @@ const numeric = z.union([z.number(), z.string().trim().min(1)]).transform(Number
 const positive = numeric.refine(n => n > 0);
 const nonnegative = numeric.refine(n => n >= 0);
 const metadataText = (value: unknown, limit: number) => typeof value === 'string' && value.trim() ? value.trim().slice(0, limit) : null;
+export function narrativeLink(raw: unknown) {
+  const r=z.object({description:z.unknown().optional(),twitter_username:z.unknown().optional()}).safeParse(raw);
+  const value=metadataText(r.success?r.data.twitter_username:null,400)?.replace(/^@/,'');
+  let reportedXHandle:string|null=null, reportedXUrl:string|null=null;
+  if(value && /^[A-Za-z0-9_]{1,15}$/.test(value)) reportedXHandle=value;
+  else if(value) try {
+    const url=new URL(value.startsWith('https://')?value:`https://x.com/${value}`);
+    if(['x.com','twitter.com','www.x.com','www.twitter.com'].includes(url.hostname) && !url.port && !url.username && !url.password &&
+      /^\/[A-Za-z0-9_]{1,15}\/status\/\d{15,20}\/?$/.test(url.pathname)) reportedXUrl=`https://x.com${url.pathname}`;
+  } catch { /* Unknown metadata remains unknown. */ }
+  return {description:metadataText(r.success?r.data.description:null,1600),reportedXHandle,reportedXUrl};
+}
 // Exact fields observed with gmgn-cli 1.6.6. In this response pool.address is
 // the TOKEN; pool.pool_address is the POOL. Never guess aliases between them.
 const schema = z.object({
@@ -31,8 +43,6 @@ export function parseGmgnMarket(raw: unknown, token: string, requestedAt: number
   const change1h = (price.price / price.price_1h - 1) * 100;
   const change24h = (price.price / price.price_24h - 1) * 100;
   if (![change1h, change24h].every(Number.isFinite)) throw new Error('Invalid GMGN price changes');
-  const link = z.object({description: z.unknown().optional(), twitter_username: z.unknown().optional()}).safeParse(r.link);
-  const handle = metadataText(link.success ? link.data.twitter_username : null, 80)?.replace(/^@/, '') ?? null;
   return {
     address: p.pool_address, token, name: r.name.slice(0, 160), symbol: r.symbol.slice(0, 80), dex: p.exchange,
     priceUsd: price.price, liquidityUsd: p.liquidity, volume24h: price.volume_24h,
@@ -42,8 +52,7 @@ export function parseGmgnMarket(raw: unknown, token: string, requestedAt: number
     marketData: {source: 'GMGN', requestedAt, receivedAt, providerAsOf: null, priceScope: 'token', metricsScope: 'token'},
     narrativeMetadata: {
       token, name: r.name.trim().slice(0, 160), symbol: r.symbol.trim().slice(0, 80),
-      description: metadataText(link.success ? link.data.description : null, 1600),
-      reportedXHandle: handle && /^[A-Za-z0-9_]{1,15}$/.test(handle) ? handle : null,
+      ...narrativeLink(r.link),
       source: 'GMGN', requestedAt, receivedAt,
     },
   };
@@ -59,11 +68,8 @@ export class GmgnMarketData {
     const raw = await this.read(['token', 'info', '--chain', 'bsc', '--address', token, '--raw']);
     const r = z.object({address, name:z.string(), symbol:z.string(), link:z.unknown().optional()}).parse(raw);
     if (r.address !== token) throw new Error('GMGN metadata identity mismatch');
-    const link = z.object({description:z.unknown().optional(),twitter_username:z.unknown().optional()}).safeParse(r.link);
-    const handle = metadataText(link.success ? link.data.twitter_username : null,80)?.replace(/^@/,'');
     return {token,name:r.name.trim().slice(0,160),symbol:r.symbol.trim().slice(0,80),
-      description:metadataText(link.success ? link.data.description : null,1600),
-      reportedXHandle:handle && /^[A-Za-z0-9_]{1,15}$/.test(handle) ? handle : null,
+      ...narrativeLink(r.link),
       source:'GMGN' as const,requestedAt,receivedAt:this.now()};
   }
   async poolForToken(token: string): Promise<Pool> {

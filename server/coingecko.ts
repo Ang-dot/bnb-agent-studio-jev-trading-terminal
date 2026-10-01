@@ -75,11 +75,11 @@ export class CoinGeckoTrades {
     }).catch(error=>{if(error instanceof CoinGeckoError)throw error;throw new CoinGeckoError('GeckoTerminal usage record unavailable; no request sent.');});
     this.budgetTail=work.catch(()=>{});return work;
   }
-  async read(pool:string,token:string):Promise<PoolTrade>{
+  async read(pool:string,token:string,options:{fresh?:boolean}={}):Promise<PoolTrade>{
     pool=address.parse(pool);token=address.parse(token);
     if(!this.options.key)throw new CoinGeckoError('GeckoTerminal Demo API key is missing.');
     const key=pool+':'+token,at=this.now(),hit=this.cache.get(key);
-    if(hit&&at>=hit.at&&at-hit.at<60000){if(hit.error)throw hit.error;return structuredClone(hit.value!);}
+    if(hit&&at>=hit.at&&at-hit.at<60000&&(hit.error||!options.fresh)){if(hit.error)throw hit.error;return structuredClone(hit.value!);}
     let task=this.pending.get(key);
     if(!task){
       if(this.pending.size>=32)throw new CoinGeckoError('GeckoTerminal request queue is full.');

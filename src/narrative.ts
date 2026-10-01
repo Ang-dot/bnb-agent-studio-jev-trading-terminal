@@ -4,6 +4,7 @@ export interface TokenNarrativeMetadata {
   symbol: string;
   description: string | null;
   reportedXHandle: string | null;
+  reportedXUrl?: string | null;
   source: 'GMGN';
   requestedAt: number;
   receivedAt: number;
@@ -12,7 +13,7 @@ export interface TokenNarrativeMetadata {
 export interface ThemeSource {
   url: string;
   postId: string;
-  handle: string;
+  handle: string | null;
   publishedAt: number;
   timestampSource: 'post-id';
   summary: string;
@@ -44,6 +45,7 @@ export interface NarrativeResearch {
   spreadSample: {
     posts: number;
     authors: number;
+    unknownAuthors?: number;
     largestAuthorShare: number | null;
   };
   issues: string[];

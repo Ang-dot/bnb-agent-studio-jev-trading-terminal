@@ -16,7 +16,7 @@ import { LaunchFeed, configureGmgnRuntime } from "./launch-feed.js";
 import { GraduationVerifier, readGraduation } from "./graduation.js";
 import { ReplayService, REPLAY_QUESTIONS, judgeReplay } from "./replay.js";
 import { createHash, randomUUID } from "node:crypto";
-import { paperControl } from "./control.js";
+import { paperControl, restorePaperSession } from "./control.js";
 import { EvidenceArchive, EvidenceCollector } from "./enrichment.js";
 import { CloudStore } from './cloud-store.js';
 import { hostedSettings, cloudAccess, publicState, publicJournalView, SharedReadCache } from './hosting.js';
@@ -38,7 +38,7 @@ const worker = new WorkerRuntime(cloud ? ()=>cloud.assertLease() : undefined);
 const wantsWorker = !cloud || process.env.WORKER_ENABLED === 'true';
 const editionWorkerActive=(edition:FrontendEdition)=>worker.active&&enabledEditions.has(edition);
 const publicReads = new SharedReadCache();
-if (!cloud) for(const store of Object.values(stores)) await store.mutate(s=>{s.running=false;});
+
 const guardedFetch: typeof fetch = async (input,init) => { await worker.assertActive();return assessmentFetch(input,init); };
 const editionFetch=(edition:FrontendEdition):typeof fetch=>async(input,init)=>{
   if(!editionWorkerActive(edition))throw new Error('Edition worker is disabled');
@@ -397,13 +397,16 @@ async function startWorker(){
   try {
     if(cloud){
       if(!await cloud.acquire())return;
-      for(const {store,monitor} of Object.values(runtimes)){await store.mutate(s=>{s.running=false;});await monitor.init();}
+      for(const {monitor} of Object.values(runtimes))await monitor.init();
       await replays.init();
       const prior=await cloud.record('launches').read();
       if(prior){const saved=JSON.parse(prior);if(saved.source!=='GMGN'||!Array.isArray(saved.launches))throw new Error('Invalid saved feed');launches.state=saved;}
       await configureGmgnRuntime(cloud.record('gmgn-cooldown'),()=>worker.assertActive());
       coinGecko.useBudget(cloud.record('coingecko-usage'));
     }
+    for(const runtime of Object.values(runtimes))await runtime.store.mutate(s=>restorePaperSession(s,
+      process.env[`PAPER_ARM_RELEASE_${runtime.edition.toUpperCase()}`],
+      enabledEditions.has(runtime.edition)&&launches.state.enabled&&runtime.monitor.state.enabled,randomUUID()));
     worker.enable();
     for(const {engine,providers} of activeRuntimes())void worker.run(async()=>{
       await providers.verifyMemoryAccess();await engine.discover();
@@ -426,7 +429,7 @@ const timer = setInterval(() => void worker.run(async () => {
     await engine.discover();
     const state=await store.read();
     if(state.running&&!state.halted&&!engine.busy&&state.ledger.positions.length)await engine.cycle(undefined,undefined,true);
-  } catch {await store.mutate(s=>{s.running=false;});}
+  } catch {engine.discoveryError="Inventory assessment deferred; retrying next cycle. Paper controls remain in effect.";}
 }),60000);
 const exitTimer=setInterval(()=>void worker.run(async()=>{await Promise.allSettled(activeRuntimes().map(({engine})=>engine.checkExits()));}),15000);
 const memoryTimer=setInterval(()=>void worker.run(async()=>{await Promise.allSettled(activeRuntimes().map(({learning,providers})=>

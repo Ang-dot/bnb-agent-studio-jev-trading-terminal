@@ -16,6 +16,7 @@ import {
 export interface MonitorAssessmentGuard {
   /** Original 90-second attention checks still govern paper execution. */
   active: () => boolean;
+  refresh?: () => Promise<MonitorTrigger>;
   /** An admitted assessment can continue with observations up to five minutes old. */
   assessmentBlocker: () => string | null;
 }
@@ -238,7 +239,7 @@ export class MonitorService {
     item.detail =
       "Activity gate passed. Reading GMGN launch stage and resolving market data.";
     try {
-      const verification = await this.deps.verify(launch);
+      let verification = await this.deps.verify(launch);
       const current = () =>
         this.deps.feed().launches.find((l) => l.address === item.token);
       const stillEligible = () =>
@@ -302,6 +303,19 @@ export class MonitorService {
         {
           active: () => stillEligible() && this.now() - verification.checkedAt <= WATCH_POLICY.maxAgeMs,
           assessmentBlocker,
+          refresh: async()=>{
+            if(!active() || !current())throw new AssessmentBlockedError('Monitoring paused before execution refresh.');
+            const rows=await this.deps.activity();
+            lookup.clear();for(const row of rows)lookup.set(row.token,row);
+            const latest=current();
+            if(!latest || !stillEligible())throw new AssessmentBlockedError('Fresh execution activity no longer qualifies.');
+            const refreshed=await this.deps.verify(latest);
+            if(!active() || refreshed.token!==verification.token || refreshed.pool!==verification.pool || !['gmgn_reported','paper_launch'].includes(refreshed.status))
+              throw new AssessmentBlockedError('Launch market identity changed before execution.');
+            verification=refreshed;
+            if(!stillEligible() || this.now()-verification.checkedAt>WATCH_POLICY.maxAgeMs)throw new AssessmentBlockedError('Execution verification expired.');
+            return {...trigger,checkedAt:this.now(),activity:lookup.get(item.token)!,admission:screenLaunch(latest,lookup.get(item.token),this.now())};
+          },
         },
       );
       if (decision?.judgment) {

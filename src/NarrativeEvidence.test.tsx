@@ -19,7 +19,7 @@ describe('separate narrative and spread display', () => {
     const html = renderToStaticMarkup(<NarrativeEvidence research={fixture()} assessments={[strong]}/>);
     expect(html).toContain('Strong angle, no token spread observed');
     expect(html).toContain('a small paper probe may qualify');
-    expect(html).toContain('0 contract-linked posts'); expect(html).toContain('0 distinct authors');
+    expect(html).toContain('0 contract-linked posts'); expect(html).toContain('0 identified authors');
     expect(html).toContain('id="evidence-T1"'); expect(html).toContain('id="evidence-TOKEN"');
     expect(html).toContain('do not establish discussion or endorsement of this token');
     expect(html).toContain('Description unavailable');

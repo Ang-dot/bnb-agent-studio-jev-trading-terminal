@@ -48,7 +48,7 @@ describe('aggressive launch paper path',()=>{
   });
   it('holds on unbacked narrative, wrong or stale metadata, missing flow and copycat conflict',()=>{
     const changes=[
-      (c:ReturnType<typeof context>)=>{c.research.narrative!.findings!.catalyst.evidenceIds=[];},
+      (c:ReturnType<typeof context>)=>{c.research.narrative!.findings!.fit.verdict='unknown';},
       (c:ReturnType<typeof context>)=>{c.research.narrative!.metadata.token='wrong';},
       (c:ReturnType<typeof context>)=>{c.research.narrative!.metadata.requestedAt=now-300001;},
       (c:ReturnType<typeof context>)=>{c.snapshot.launchQuote!.activity=undefined;},
@@ -77,6 +77,8 @@ describe('aggressive launch paper path',()=>{
     expect(copycatStatus(c.snapshot,c.research,now)).toBe('unresolved');
     c.research.status='ready';c.research.sources=[{...c.research.narrative!.themeSources[0],identityExcerpt:token}];
     f.evidenceIds=['X1'];expect(copycatStatus(c.snapshot,c.research,now)).toBe('supported');
+    expect(needsProbe(c.snapshot,c.research,now)).toBe(true); // Every initial entry is a probe.
+    c.snapshot.position={quantity:25,costUsd:25,returnPct:10,takeProfits:0};
     expect(needsProbe(c.snapshot,c.research,now)).toBe(false);
     f.evidenceIds=['X2'];expect(copycatStatus(c.snapshot,c.research,now)).toBe('unresolved');
     f.evidenceIds=['X1'];c.research.narrative!.metadata.token='wrong';
@@ -122,4 +124,13 @@ describe('aggressive launch paper path',()=>{
       feed.state.launches=[];await expect(providers.pool(pool.address,token)).rejects.toThrow('unavailable');
     } finally {vi.useRealTimers();}
   });
+});
+
+it('allows a cultural-hook probe without a news event or KOL, but never skips fit or fresh flow',()=>{
+ const c=context(),f=c.research.narrative!.findings!;
+ f.catalyst={verdict:'unknown',summary:'No news event',evidenceIds:[]};f.timing={...f.catalyst};
+ c.judgment={...c.judgment,confidence:.56,quality:1.3};expect(evaluatePolicy(c).action).toBe('buy');
+ f.fit={verdict:'unknown',summary:'Ticker does not establish a hook',evidenceIds:[]};
+ c.research.status='ready';c.research.sources=[{...c.research.narrative!.themeSources[0],identityExcerpt:token}];
+ expect(evaluatePolicy(c).action).toBe('hold'); // CA posts cannot bypass fit.
 });

@@ -17,7 +17,7 @@ export function XEvidence({ research, now, assessments }: { research?: XResearch
     <small>Searched {utc(research.collectedAt)} · {research.searchCalls} search receipts in that request</small>
     {research.delivery && <small>{research.delivery==='fresh' ? 'New Grok request for this assessment.' : research.delivery==='cache' ? 'Reused cached research; no new X request for this assessment.' : 'Shared an in-flight Grok request; no duplicate request.'}</small>}
     {research.sources.map((source, i) => <details className="x-source" key={source.postId} open>
-      <summary><span className="evidence-id">X{i + 1}</span> @{source.handle} · {new Date(source.publishedAt).toISOString().slice(11, 16)} UTC</summary>
+      <summary><span className="evidence-id">X{i + 1}</span> {source.handle && source.handle !== "i" ? `@${source.handle}` : "Author unavailable"} · {new Date(source.publishedAt).toISOString().slice(11, 16)} UTC</summary>
       <p id={`evidence-X${i + 1}`}><b>Grok summary:</b> {source.summary}</p>
       <small>Grok-reported contract excerpt</small>
       <p className="x-excerpt">{source.identityExcerpt}</p>

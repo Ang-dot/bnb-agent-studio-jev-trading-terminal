@@ -11,7 +11,7 @@ export function NarrativeSummary({research, assessments}: {research?: XResearch;
   return <div className="narrative-summary" aria-label="Narrative and spread assessments">
     <div><small>Narrative potential</small><strong>{potential?.valueLabel ?? (narrative.status === 'ready' ? 'Awaiting JEV assessment' : 'Assessment unavailable')}</strong></div>
     <div><small>Observed token spread</small><strong>{spread?.valueLabel ?? (research?.status === 'no_results' ? 'No token spread observed' : `${narrative.spreadSample.posts} sampled posts`)}</strong></div>
-    {potential?.value === 'strong' && research?.status === 'no_results' && <p className="narrative-watch">Strong angle, no token spread observed · a small paper probe may qualify with fresh metadata, cited catalyst, timing and positive buying. It is not token endorsement.</p>}
+    {potential?.value === 'strong' && research?.status === 'no_results' && <p className="narrative-watch">Strong angle, no token spread observed · a small paper probe may qualify with fresh metadata, supported fit, cited context and positive buying. It is not token endorsement.</p>}
   </div>;
 }
 
@@ -35,7 +35,7 @@ export function NarrativeEvidence({research, assessments}: {research: XResearch;
       <section aria-label="Narrative potential evidence"><h4>Narrative potential</h4><p className="narrative-caption">Grok’s interpretation of the angle and its supporting context.</p>
         {(['fit', 'catalyst', 'originality', 'timing'] as const).map(id => <Finding key={id} id={id} narrative={narrative}/>)}</section>
       <section aria-label="Observed spread evidence"><h4>Observed spread</h4>
-        <p className="narrative-caption">{narrative.spreadSample.posts} contract-linked posts · {narrative.spreadSample.authors} distinct authors in this sample{narrative.spreadSample.largestAuthorShare !== null ? ` · largest author ${(narrative.spreadSample.largestAuthorShare * 100).toFixed(0)}%` : ''}.</p>
+        <p className="narrative-caption">{narrative.spreadSample.posts} contract-linked posts · {narrative.spreadSample.authors} identified authors{narrative.spreadSample.unknownAuthors ? ` · ${narrative.spreadSample.unknownAuthors} posts with unknown author` : ""}{narrative.spreadSample.largestAuthorShare !== null ? ` · largest author ${(narrative.spreadSample.largestAuthorShare * 100).toFixed(0)}%` : ''}.</p>
         {(['community', 'kol', 'promotion'] as const).map(id => <Finding key={id} id={id} narrative={narrative}/>)}</section>
     </div>
     <small>Findings and author roles are Grok-reported. Distinct authors do not establish independence or organic reach. Narrative potential is not a price forecast.</small>
@@ -44,12 +44,13 @@ export function NarrativeEvidence({research, assessments}: {research: XResearch;
       <p><b>{narrative.metadata.name || 'Name unavailable'}</b> · {narrative.metadata.symbol || 'Ticker unavailable'}</p>
       <p>{narrative.metadata.description ?? 'Description unavailable; no description was inferred.'}</p>
       <small>{narrative.metadata.reportedXHandle ? `Provider-reported handle: @${narrative.metadata.reportedXHandle}. Ownership is unverified.` : 'Project X handle unavailable.'}</small>
+      {narrative.metadata.reportedXUrl && <small>Provider-reported post clue: <a href={narrative.metadata.reportedXUrl} target="_blank" rel="noopener noreferrer">Open X post</a> · affiliation unverified.</small>}
       <small>GMGN receipt {new Date(narrative.metadata.receivedAt).toISOString()} · creator-supplied text, not verified claims.</small>
     </details>
     <details className="narrative-themes" open><summary>Broader theme sources · {narrative.themeSources.length}</summary>
       <p>Context for the angle. These posts do not establish discussion or endorsement of this token.</p>
       {narrative.themeSources.map((source, i) => <article className="x-source" id={`evidence-T${i + 1}`} key={source.postId}>
-        <strong><span className="evidence-id">T{i + 1}</span> @{source.handle}</strong><p>{source.summary}</p>
+        <strong><span className="evidence-id">T{i + 1}</span> {source.handle && source.handle !== "i" ? `@${source.handle}` : "Author unavailable"}</strong><p>{source.summary}</p>
         <small>{new Date(source.publishedAt).toISOString()} · time derived from post ID</small>
         <a href={source.url} target="_blank" rel="noopener noreferrer">Open theme post <ExternalLink size={11}/></a>
       </article>)}

@@ -74,6 +74,23 @@ export function parseLaunchActivity(
     ];
   });
 }
+// Token-info exposes explicit 5m fields; never substitute 1h totals or derive missing swaps.
+export function parseTokenActivity(raw:unknown, token:string, at:number):LaunchActivity {
+  const r=z.object({address:z.string(),price:z.object({address:z.string()}).passthrough()}).passthrough().parse(raw);
+  if(r.address.toLowerCase()!==token.toLowerCase() || r.price.address.toLowerCase()!==token.toLowerCase()) throw new Error('Activity identity mismatch');
+  const riskFlags:string[]=[];
+  if(r.is_honeypot===1 || r.is_honeypot==='yes')riskFlags.push('GMGN honeypot flag');
+  if(r.is_wash_trading===true)riskFlags.push('GMGN wash-trading flag');
+  if((numeric(r.rug_ratio)??0)>.3)riskFlags.push('GMGN elevated rug risk');
+  const stat=z.object({top_10_holder_rate:z.unknown().optional(),top_bundler_trader_percentage:z.unknown().optional(),top_rat_trader_percentage:z.unknown().optional()}).safeParse(r.stat);
+  if(stat.success) {
+    if((numeric(stat.data.top_10_holder_rate)??0)>.6)riskFlags.push('GMGN top-10 concentration >60%');
+    if((numeric(stat.data.top_bundler_trader_percentage)??0)>.3)riskFlags.push('GMGN bundle concentration >30%');
+    if((numeric(stat.data.top_rat_trader_percentage)??0)>.3)riskFlags.push('GMGN insider activity >30%');
+  }
+  return {token:token.toLowerCase(),observedAt:at,volume5mUsd:numeric(r.price.volume_5m),swaps5m:numeric(r.price.swaps_5m),
+    buys5m:numeric(r.price.buys_5m),sells5m:numeric(r.price.sells_5m),riskFlags};
+}
 export function parseTrenches(
   raw: unknown,
   platform: Platform,
@@ -250,6 +267,8 @@ export class LaunchFeed {
   private chartCache = new Map<string, { at: number; candles: Candle[] }>();
   private chartPending = new Map<string, Promise<Candle[]>>();
   private activityCache: { at: number; rows: LaunchActivity[] } | null = null;
+  private targetedActivity = new Map<string,LaunchActivity>();
+  private targetedAttempts = new Map<string,number>();
   private activityPending: Promise<LaunchActivity[]> | null = null;
   constructor(private read: typeof gmgnRead = gmgnRead) {}
   async activity(): Promise<LaunchActivity[]> {
@@ -274,8 +293,23 @@ export class LaunchFeed {
         "100",
         "--raw",
       ]);
-      const at = Date.now(),
-        rows = parseLaunchActivity(raw, at);
+      const at=Date.now(),rows=parseLaunchActivity(raw,at),covered=new Set(rows.map(a=>a.token));
+      for(const [token,value] of this.targetedActivity) {
+        if(at-value.observedAt>90000){this.targetedActivity.delete(token);continue;}
+        if(!covered.has(token)){rows.push(value);covered.add(token);}
+      }
+      const candidates=this.state.launches.filter(l=>l.stage!=='graduated_reported' && l.observedAt<=at && at-l.observedAt<=90000 &&
+        (l.liquidityUsd??0)>=2000 && (l.holders??0)>=10 && !l.riskFlags.length && !covered.has(l.address))
+        .sort((a,b)=>(this.targetedAttempts.get(a.address)??0)-(this.targetedAttempts.get(b.address)??0)).slice(0,3);
+      for(const launch of candidates) {
+        this.targetedAttempts.set(launch.address,Date.now());
+        try {
+          const requested=Date.now(),raw=await this.read(['token','info','--chain','bsc','--address',launch.address,'--raw']);
+          const activity=parseTokenActivity(raw,launch.address,requested);
+          rows.push(activity);this.targetedActivity.set(launch.address,activity);
+        } catch { /* No inferred activity; other candidates remain usable. */ }
+      }
+      if(this.targetedAttempts.size>600) for(const key of this.targetedAttempts.keys())if(!this.state.launches.some(l=>l.address===key))this.targetedAttempts.delete(key);
       this.activityCache = { at, rows };
       return rows;
     })().finally(() => {
