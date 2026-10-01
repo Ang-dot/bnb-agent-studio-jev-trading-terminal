@@ -47,6 +47,16 @@ describe('Pages API boundary',()=>{
     expect(headers.get('cf-access-jwt-assertion')).toBeNull();expect(headers.get('cookie')).toBeNull();
     expect(response.headers.get('x-jev-origin-secret')).toBeNull();
   });
+  it('preserves state validators so unchanged polls return no response body',async()=>{
+    const tag='\"state-v1\"';
+    const upstream=vi.fn(async(_url,options)=>new Response(null,{status:304,headers:{ETag:tag}}));
+    vi.stubGlobal('fetch',upstream);
+    const response=await worker.fetch(new Request(url+'/api/kbw/state',{headers:{'If-None-Match':tag}}),env);
+    expect(upstream.mock.calls[0][1].headers.get('If-None-Match')).toBe(tag);
+    expect(response.status).toBe(304);
+    expect(response.headers.get('ETag')).toBe(tag);
+    expect(await response.text()).toBe('');
+  });
   it('forwards operator assertion for backend signature verification and rejects cross-origin writes',async()=>{
     const upstream=vi.fn(async()=>Response.json({ok:true}));vi.stubGlobal('fetch',upstream);
     const options={method:'POST',headers:{'Content-Type':'application/json',Origin:url,'Cf-Access-Jwt-Assertion':'backend-must-verify'},body:'{"action":"pause"}'};

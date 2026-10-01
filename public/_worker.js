@@ -18,6 +18,11 @@ export default {
       if (backend.protocol !== 'https:' || !backend.hostname.endsWith('.nodeops.app')) return new Response(null,{status:503});
       backend.pathname = path;backend.search = url.search;
       const headers = new Headers({'X-Jev-Origin-Secret':env.ORIGIN_SECRET});
+      const stateRequest=/^\/api\/(?:(?:kbw|token2049)\/)?state$/.test(path);
+      if (request.method === 'GET' && stateRequest) {
+        const tag=request.headers.get('If-None-Match');
+        if (tag) headers.set('If-None-Match',tag);
+      }
       if (request.method === 'POST') {headers.set('Content-Type','application/json');headers.set('Origin',url.origin);}
       if (operator) {
         const jwt = request.headers.get('Cf-Access-Jwt-Assertion');
@@ -28,8 +33,13 @@ export default {
         const body = request.method === 'POST' ? await request.text() : undefined;
         if (body && new TextEncoder().encode(body).length>16384) return new Response(null,{status:413});
         const upstream=await fetch(backend,{method:request.method,headers,body,redirect:'manual',signal:AbortSignal.timeout(25000)});
-        if(upstream.status>=300&&upstream.status<400)return new Response(null,{status:502});
-        return new Response(upstream.body,{status:upstream.status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+        if(upstream.status>=300&&upstream.status<400&&upstream.status!==304)return new Response(null,{status:502});
+        const responseHeaders=new Headers({'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+        if (stateRequest) {
+          const tag=upstream.headers.get('ETag');
+          if (tag) responseHeaders.set('ETag',tag);
+        }
+        return new Response(upstream.status===304?null:upstream.body,{status:upstream.status,headers:responseHeaders});
       } catch {return Response.json({error:'Backend temporarily unavailable; no action confirmed'}, {status:503});}
     }
     // Pages redirects /index.html to /. Read the root asset internally so the
