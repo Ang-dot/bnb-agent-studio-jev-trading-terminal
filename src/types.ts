@@ -41,6 +41,7 @@ export interface Candle {
   volume: number;
 }
 export interface EntrySetup {
+  lookbackMinutes?: 5 | 30;
   competingTickers?: number;
   token: string; observedAt: number; marketCapUsd: number | null;
   rangeLowUsd: number | null; distanceFromLowPct: number | null;

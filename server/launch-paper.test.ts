@@ -96,6 +96,19 @@ describe('aggressive launch paper path',()=>{
     expect(result.rangeLowUsd).toBe(.8);expect(result.distanceFromLowPct).toBe(25);
     expect(launchEntrySetup(launch,[candle(now,1)],now).rangeLowUsd).toBeNull();
   });
+  it('uses a recent base before graduation without accepting an acute curve spike',()=>{
+    const candle=(ago:number,low:number)=>({time:(now-ago)/1000,open:1,close:1,low,high:2,volume:1});
+    const base=[candle(20*60000,.1),candle(4*60000,.9),candle(2*60000,.95),candle(0,1)];
+    const c=context();c.snapshot.entrySetup=launchEntrySetup(launch,base,now);
+    expect(c.snapshot.entrySetup).toMatchObject({lookbackMinutes:5,rangeLowUsd:.9});
+    expect(evaluatePolicy(c).action).toBe('buy');
+    c.snapshot.entrySetup=launchEntrySetup({...launch,stage:'graduated_reported'},base,now);
+    expect(c.snapshot.entrySetup).toMatchObject({lookbackMinutes:30,rangeLowUsd:.1});
+    expect(evaluatePolicy(c).action).toBe('hold');
+    c.snapshot.entrySetup=launchEntrySetup(launch,[candle(2*60000,.1),candle(60000,.5),candle(0,1)],now);
+    expect(evaluatePolicy(c).action).toBe('hold'); // Still a >100% spike within the current window.
+    expect(launchEntrySetup(launch,[candle(20*60000,.1),candle(60000,.9),candle(0,1)],now).rangeLowUsd).toBeNull();
+  });
   it('retains the same simulated identity and entry basis across graduation and rejects stale exit marks',()=>{
     const first=snapshot(),ledger=applyPaperFill(emptyLedger(),first,'buy','entry',now);
     const graduated={...launch,stage:'graduated_reported' as const,reportedGraduatedAt:now,priceUsd:2.5};

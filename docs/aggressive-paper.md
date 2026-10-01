@@ -5,7 +5,7 @@ The reference is [CCPiggy_'s September review](https://x.com/CCPiggy_/status/210
 ## Explicit interpretations
 
 - “Around 20k” is interpreted as **market cap**, with an experimental $15k–$25k zone. It is not a liquidity target. A token can also qualify within 25% of its observed recent low. A measured chase exceeding 100% from that low blocks entry even inside the cap zone.
-- The recent low uses up to 30 minutes of GMGN token candles, with at least three observations spanning two minutes and a last candle within 90 seconds. It is a historical range, not a known bottom. Missing history remains unknown; a fresh cap-zone observation can still qualify.
+- The recent low uses five minutes of GMGN token candles for new/bonding launches and thirty minutes for graduates, with at least three observations spanning two minutes and a last candle within 90 seconds. The shorter pre-graduation window permits an observed local base after initial curve growth; it does not remove the 100% spike limit or turn a rising launch into a known bottom. Historical assessments without a recorded window retain their original thirty-minute interpretation. It is a historical range, not a known bottom. Missing history remains unknown; a fresh cap-zone observation can still qualify.
 - “80% likely” is the author's subjective conviction. JEV's probe/add model-score floors is an experimental application setting, not an 80% launch probability or promised win rate.
 - “200% / 300%” means +200% / +300% return (3× / 4×). “Sell 15%” means 15% of the originally acquired tokens at each step, including all pre-recovery adds. These are explicit choices where the post is ambiguous.
 

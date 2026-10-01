@@ -42,11 +42,13 @@ export function launchPaperSnapshot(pool: Pool, now: number): Snapshot {
 
 // "Bottom" is only a recent observed range low, never a claim about the future low.
 export function launchEntrySetup(launch: Launch, candles: Candle[], now: number): EntrySetup {
-  const recent=candles.filter(c=>Number.isFinite(c.time)&&c.time*1000<=now&&c.time*1000>=now-30*60000&&Number.isFinite(c.low)&&c.low>0)
+  // Early curves need a recent base, rather than anchoring every entry to their launch price.
+  const lookbackMinutes = ['new','bonding'].includes(launch.stage) ? 5 : 30;
+  const recent=candles.filter(c=>Number.isFinite(c.time)&&c.time*1000<=now&&c.time*1000>=now-lookbackMinutes*60000&&Number.isFinite(c.low)&&c.low>0)
     .sort((a,b)=>a.time-b.time);
   const covered=recent.length>=3 && recent.at(-1)!.time-recent[0].time>=120 && now-recent.at(-1)!.time*1000<=90000;
   const low=covered?Math.min(...recent.map(c=>c.low)):null;
-  return {token:launch.address.toLowerCase(),observedAt:launch.observedAt,source:'GMGN',
+  return {token:launch.address.toLowerCase(),observedAt:launch.observedAt,source:'GMGN',lookbackMinutes,
     marketCapUsd:launch.marketCapUsd!=null&&Number.isFinite(launch.marketCapUsd)&&launch.marketCapUsd>0?launch.marketCapUsd:null,
     rangeLowUsd:low,distanceFromLowPct:low&&launch.priceUsd?Math.max(0,(launch.priceUsd/low-1)*100):null,
     candleFrom:covered?recent[0].time*1000:null,candleTo:covered?recent.at(-1)!.time*1000:null};
