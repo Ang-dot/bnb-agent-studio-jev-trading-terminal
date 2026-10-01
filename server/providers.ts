@@ -354,8 +354,9 @@ export class Providers {
   }
   async memories(pool: Pool, context?: ResearchInput): Promise<Memory[]> {
     return this.track(this.memoryProvider, async () => {
+      const comparable = `BSC ${pool.launchQuote?.stage??'DEX pool'} paper launches with ${pool.buys!=null&&pool.sells!=null?(pool.buys>=pool.sells?'buy-led':'sell-led'):'unknown'} short-window flow: measured follow-up outcomes, liquidity reversals, holder distribution and narrative contradictions. ${context ? context.sections.filter(s=>s.availability!=='unavailable').map(s=>s.label).join(', ') : ''}`;
+      if(this.mem9)return this.mem9.search(comparable,pool.token);
       const query = `BSC token ${pool.token} ${pool.symbol}: prior paper observation decisions HOLD entry exit outcomes; comparable Flap Four.meme new/bonding/graduate liquidity reversals, holder distribution, short-window flow and narrative contradictions. ${context ? 'Creator '+String(context.sections.find(s=>s.id==='Rcreator')?.facts.address??'unknown')+'; '+context.sections.filter(s=>s.availability!=='unavailable').map(s=>s.label).join(', ') : ''}`;
-      if(this.mem9)return this.mem9.search(query);
       const b = this.brain();
       return memorySchema
         .parse(

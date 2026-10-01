@@ -131,6 +131,14 @@
 .tt-mini-heading small { font-size:9px; color:#8d99b0; font-weight:450; margin-left:5px; }
 .tt-memory-recall strong { font-size:11px; display:block; line-height:1.45; }
 .tt-memory-recall p { font-size:10px; color:#7b87a0; line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin:3px 0 5px; }
+.tt-recall-results { width:100%; }
+.tt-recall-list { display:grid; gap:6px; max-height:310px; overflow:auto; padding:2px 4px 5px 0; }
+.tt-recall-card { display:block; width:100%; text-align:left; padding:8px 10px; border:1px solid #e4e9f1; border-radius:8px; background:#f9fbfe; }
+.tt-recall-card:hover,.tt-recall-card:focus-visible { border-color:#a8bddf; background:#f2f6fc; }
+.tt-recall-card strong { color:#30435e; }
+.tt-recall-card .tt-recall-meta { display:block; color:#75849a; font-size:10px; text-transform:capitalize; }
+.tt-recall-card small:last-child { display:flex; align-items:center; gap:3px; color:#526f9b; }
+.tt-recall-card .tt-recall-outcome { color:#386f62; }
 .tt-memory-recall small,.tt-model-assessment small { font-size:9px; color:#8d96a9; display:block; line-height:1.5; }
 .tt-model-assessment p { font-size:11px; color:#78869e; margin:6px 0 3px; }
 .tt-model-assessment p b { color:#34465f; margin-left:5px; }

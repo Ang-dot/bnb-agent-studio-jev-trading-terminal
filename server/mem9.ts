@@ -17,9 +17,74 @@ const rowSchema = z.object({
 });
 const listSchema = z.object({memories:z.array(rowSchema), partial:z.boolean().optional()});
 type Row = z.infer<typeof rowSchema>;
+const episodeSchema = z.object({
+  episodeId:z.string(), kind:z.enum(['decision','observation','outcome','review']),
+  name:z.string(), token:z.string(), createdAt:z.number().finite(), summary:z.string(),
+  modelAction:z.string().nullish(), execution:z.string().optional(),
+  market:z.object({source:z.string().optional(),priceUsd:z.number().finite().optional(),liquidityUsd:z.number().finite().optional(),
+    buyCount:z.number().nullish(),sellCount:z.number().nullish(),buys:z.number().nullish(),sells:z.number().nullish(),
+    change1h:z.number().nullish()}).passthrough().optional(),
+  reasons:z.array(z.string()).optional(),
+  assessments:z.array(z.object({id:z.string().optional(),label:z.string(),valueLabel:z.string()}).passthrough()).optional(),
+  horizonMinutes:z.number().finite().optional(), grossPriceChangePct:z.number().finite().optional(),
+  hypothetical:z.boolean().optional(), interpretation:z.string().optional(), limitations:z.string().optional(),
+  sampleSize:z.number().finite().optional(), medianGrossPriceChangePct:z.number().finite().optional(),
+});
+type Episode = z.infer<typeof episodeSchema>;
 const digest = (value:string) => createHash('sha256').update(value).digest('hex');
 const agentId = 'jev-kbw';
 const journalTag = 'jev-paper';
+const short = (value:string,limit=240) => value.length>limit ? value.slice(0,limit-1)+'…' : value;
+
+function project(row:Row):Memory & {episodeKind:Episode['kind'];recordedAt:number} {
+  let episode:Episode;
+  try { episode=episodeSchema.parse(JSON.parse(row.content)); }
+  catch { throw new Error('MEM9 episode content is not valid'); }
+  if(episode.episodeId!==row.metadata.episodeId)throw new Error('MEM9 episode reference mismatch');
+  const outcome=episode.kind==='outcome'&&episode.horizonMinutes!==undefined&&episode.grossPriceChangePct!==undefined
+    ? `${episode.horizonMinutes}m observed gross price change ${episode.grossPriceChangePct>=0?'+':''}${episode.grossPriceChangePct.toFixed(1)}%${episode.hypothetical?' after a no-fill decision':''}`
+    : undefined;
+  const limitation=episode.limitations || episode.interpretation ||
+    (episode.kind==='decision'?'Earlier model judgment is context, not an independently verified outcome.':
+      episode.kind==='observation'?'Observation only; no JEV decision or measured outcome.':undefined);
+  const priority=['evidence_support','memory_alignment','narrative_potential','narrative_spread'];
+  const assessments=episode.assessments?.slice().sort((a,b)=>{
+    const rank=(id?:string)=>{const index=priority.indexOf(id??'');return index<0?priority.length:index;};
+    return rank(a.id)-rank(b.id);
+  }).slice(0,4).map(a=>`${short(a.label,60)}: ${short(a.valueLabel,80)}`).join('; ');
+  const market=episode.market;
+  const summary=[
+    `${episode.kind.toUpperCase()} · ${short(episode.summary,260)} · ${new Date(episode.createdAt).toISOString()} · ${episode.token}`,
+    market?`Observed ${market.source??'market'} price ${market.priceUsd??'unknown'}; liquidity USD ${market.liquidityUsd??'unknown'}; buys/sells ${market.buyCount??market.buys??'unknown'}/${market.sellCount??market.sells??'unknown'}; 1h change ${market.change1h??'unknown'}%.`:undefined,
+    episode.modelAction?`Model action: ${short(episode.modelAction,40)}; execution: ${short(episode.execution||'unknown',50)}.`:undefined,
+    assessments?`Recorded assessments: ${assessments}.`:undefined,
+    episode.reasons?.length?`Recorded reason: ${short(episode.reasons[0])}.`:undefined,
+    outcome?`Follow-up: ${outcome}.`:undefined,
+    episode.kind==='review'&&episode.sampleSize!==undefined&&episode.medianGrossPriceChangePct!==undefined
+      ?`Descriptive review: ${episode.sampleSize} selected outcomes; median gross price change ${episode.medianGrossPriceChangePct.toFixed(1)}%.`:undefined,
+    limitation?`Limit: ${short(limitation,300)}`:undefined,
+  ].filter(Boolean).join('\n');
+  return {pageId:row.id,slug:row.id,title:row.metadata.title.slice(0,160),summary,preview:short(episode.summary,260),
+    status:row.state,provider:'mem9',similarity:null,searchScore:row.score??undefined,
+    sourceHash:row.metadata.contentHash,episodeKind:episode.kind,episodeToken:episode.token,recordedAt:episode.createdAt,
+    outcome,limitation};
+}
+
+function selectRecall(exact:Memory[], comparable:Memory[],token:string):Memory[] {
+  const selected:Memory[]=[];
+  const add=(memory?:Memory) => {if(memory&&!selected.some(m=>m.pageId===memory.pageId))selected.push(memory);};
+  add(exact.find(m=>m.episodeKind==='outcome'));
+  add(exact.find(m=>m.episodeKind==='decision'));
+  for(const memory of exact)add(memory);
+  const exactSelection=selected.slice(0,2);
+  selected.length=0;
+  exactSelection.forEach(add);
+  const analog=exact.length?comparable.filter(m=>m.episodeToken?.toLowerCase()!==token.toLowerCase()||m.episodeKind==='review'):comparable;
+  add(analog.find(m=>m.episodeKind==='outcome'||m.episodeKind==='review'));
+  for(const memory of analog)add(memory);
+  for(const memory of exact)add(memory);
+  return selected.slice(0,4);
+}
 
 class Mem9HttpError extends Error {
   constructor(readonly status:number) { super(`Provider returned HTTP ${status}`); }
@@ -60,15 +125,18 @@ export class Mem9Memory {
       throw new Error('MEM9 memory scope or content integrity mismatch');
     return row;
   }
-  async search(query:string):Promise<Memory[]> {
-    const list=listSchema.parse(await this.request('?'+this.params({q:query,limit:'4',offset:'0'})));
-    // A truncated provider search must not become a successful empty cold start.
-    if (list.partial) throw new Error('MEM9 returned an incomplete search');
-    return list.memories.map(row=>this.validate(row)).slice(0,4).map(row=>({
-      pageId:row.id,slug:row.id,title:row.metadata.title.slice(0,160),summary:row.content.slice(0,1500),
-      status:row.state,provider:'mem9',similarity:null,searchScore:row.score??undefined,
-      sourceHash:row.metadata.contentHash,
-    }));
+  async search(query:string,token:string):Promise<Memory[]> {
+    // Exact contract matches and analogous cases compete for separate slots.
+    // Both calls must succeed; an incomplete search is not a cold start.
+    const [exactResponse,analogResponse]=await Promise.all([
+      this.request('?'+this.params({q:token,search_mode:'keyword',sort_by:'updated_at',sort_dir:'desc',limit:'12',offset:'0'})),
+      this.request('?'+this.params({q:query,limit:'8',offset:'0'})),
+    ]);
+    const exact=listSchema.parse(exactResponse),analog=listSchema.parse(analogResponse);
+    if(exact.partial||analog.partial)throw new Error('MEM9 returned an incomplete search');
+    const exactRows=exact.memories.map(row=>project(this.validate(row))).filter(m=>m.episodeToken?.toLowerCase()===token.toLowerCase());
+    const analogRows=analog.memories.map(row=>project(this.validate(row)));
+    return selectRecall(exactRows,analogRows,token);
   }
   private async findEpisode(episodeId:string, contentHash:string):Promise<Row|null> {
     const rows=listSchema.parse(await this.request('?'+this.params({tags:`jev-episode-${episodeId}`,limit:'2',offset:'0'})));

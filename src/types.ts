@@ -107,10 +107,16 @@ export interface Memory {
   slug: string;
   title: string;
   summary: string;
+  preview?: string;
   similarity: number | null;
   provider?: 'mem9' | 'living-brain';
   searchScore?: number;
   sourceHash?: string;
+  episodeKind?: 'decision' | 'observation' | 'outcome' | 'review';
+  episodeToken?: string;
+  recordedAt?: number;
+  outcome?: string;
+  limitation?: string;
   status: string;
 }
 export interface XSource {
