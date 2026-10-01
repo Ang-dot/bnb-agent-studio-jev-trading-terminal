@@ -228,6 +228,16 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
   const contextAssessment = record?.judgment?.assessments?.find(a => a.kind === "context");
   const action = record ? decisionAction(record) : null;
 
+  function toggleLaunchSection(stage: LaunchStage, isExpanded: boolean) {
+    const scroller = rail.current;
+    const group = document.getElementById(`launch-section-${stage}`);
+    const sectionTop = scroller && group ? scroller.scrollTop + group.getBoundingClientRect().top - scroller.getBoundingClientRect().top : null;
+    setExpanded(current => isExpanded ? current.filter(value => value !== stage) : [...current, stage]);
+    if (isExpanded) requestAnimationFrame(() => {
+      if (scroller && sectionTop != null) scroller.scrollTo({ top: Math.max(0, sectionTop), behavior: "instant" });
+      document.getElementById(`launch-toggle-${stage}`)?.focus({ preventScroll: true });
+    });
+  }
   function selectToken(token: string) { setSelected(token.toLowerCase()); setRecordId(""); setContextTab("memory"); }
   function selectDecision(d: Decision) {
     setRecordId(d.id); setContextTab("memory");
@@ -290,8 +300,12 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
           {feed && sections.map(section => {
             const list = filtered.filter(l => l.stage === section.stage).sort((a,b) => section.stage === "bonding" ? (b.progress ?? 0) - (a.progress ?? 0) : section.stage === "graduated_reported" ? (b.reportedGraduatedAt ?? 0) - (a.reportedGraduatedAt ?? 0) : (b.createdAt ?? 0) - (a.createdAt ?? 0));
             const isExpanded = expanded.includes(section.stage);
-            return <section className="tt-launch-group" key={section.stage}>
-              <h3>{section.label}<span>{list.length}</span></h3>
+            return <section className="tt-launch-group" id={`launch-section-${section.stage}`} key={section.stage}>
+              <div className="tt-launch-group-header">
+                <h3>{section.label}<span>{list.length}</span></h3>
+                {list.length > section.limit && <button id={`launch-toggle-${section.stage}`} className="tt-show-more" aria-label={`${isExpanded ? "Collapse" : "Expand"} ${section.label}`} aria-expanded={isExpanded} aria-controls={`launch-items-${section.stage}`} onClick={() => toggleLaunchSection(section.stage, isExpanded)}>{isExpanded ? "Show fewer" : "View all"}<ChevronDown size={12} className={isExpanded ? "tt-rotate" : ""} /></button>}
+              </div>
+              <div id={`launch-items-${section.stage}`}>
               {!list.length && <p className="tt-group-empty">{query ? "No matches" : "No launches in this feed"}</p>}
               {(isExpanded ? list : list.slice(0, section.limit)).map(l => {
                 const held = state?.ledger.positions.some(p => p.token.toLowerCase() === l.address.toLowerCase());
@@ -304,7 +318,8 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
                   <span className="tt-launch-liquidity">Liquidity <b>{dollars(l.liquidityUsd, true)}</b>{l.holders != null && <span>{l.holders.toLocaleString()} holders</span>}</span></span>
                 </button>;
               })}
-              {list.length > section.limit && <button className="tt-show-more" onClick={() => setExpanded(e => isExpanded ? e.filter(s => s !== section.stage) : [...e, section.stage])}>{isExpanded ? "Show fewer" : `View all ${list.length}`}<ChevronDown size={12} className={isExpanded ? "tt-rotate" : ""} /></button>}
+              </div>
+              {isExpanded && list.length > section.limit && <button className="tt-show-more" aria-label={`Collapse ${section.label} from bottom`} aria-expanded={true} aria-controls={`launch-items-${section.stage}`} onClick={() => toggleLaunchSection(section.stage, true)}>Show fewer<ChevronDown size={12} className="tt-rotate" /></button>}
             </section>;
           })}
         </div>
