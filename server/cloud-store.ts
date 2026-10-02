@@ -10,6 +10,8 @@ import type { MemoryEpisode } from '../src/memory.js';
 import type { EpisodeJournal, JournalView } from './journal-store.js';
 export { encodeState, decodeState } from './state-codec.js';
 
+const ACTIVE_DECISION_LIMIT=100;
+
 interface Lease {owner:string|null;epoch:number;expires:number}
 export function ownsLease(l:Lease,owner:string,epoch:number,now:number){return l.owner===owner&&l.epoch===epoch&&l.expires>now;}
 export function claimLease(l:Lease,owner:string,now:number,ttl:number):Lease|null {
@@ -34,6 +36,8 @@ export class CloudStore implements Store {
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_worker_lease (id integer PRIMARY KEY, owner varchar(64), epoch bigint NOT NULL, expires bigint NOT NULL)');
     await this.pool.query('INSERT INTO jev_private.jev_worker_lease (id,owner,epoch,expires) VALUES (1,NULL,0,0) ON CONFLICT (id) DO NOTHING');
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_runtime_records (name varchar(64) PRIMARY KEY, data text NOT NULL)');
+    await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_decision_archive (edition smallint NOT NULL, id text NOT NULL, time bigint NOT NULL, data jsonb NOT NULL, PRIMARY KEY (edition,id))');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS jev_decision_archive_time ON jev_private.jev_decision_archive (edition,time DESC)');
     await this.pool.query('CREATE TABLE IF NOT EXISTS jev_private.jev_evidence (id varchar(64) PRIMARY KEY, token varchar(42) NOT NULL, observed_at bigint NOT NULL, data text NOT NULL, raw text NOT NULL)');
     await this.pool.query('CREATE INDEX IF NOT EXISTS jev_evidence_token_time ON jev_private.jev_evidence (token, observed_at DESC)');
     await this.pool.query(`CREATE TABLE IF NOT EXISTS jev_private.jev_memory_episode (
@@ -128,11 +132,19 @@ export class CloudStore implements Store {
       const state=rows[0].data===null?structuredClone(cached!.state):decodeState(rows[0].data);
       delete state.memoryEpisodes;
       fn(state);state.revision++;
+      const archival=state.decisions.slice(ACTIVE_DECISION_LIMIT);
+      for(let offset=0;offset<archival.length;offset+=25){
+        await c.query(`INSERT INTO jev_private.jev_decision_archive (edition,id,time,data)
+          SELECT $1,d->>'id',(d->>'time')::bigint,d FROM jsonb_array_elements($2::jsonb) d
+          ON CONFLICT (edition,id) DO NOTHING`,[id,JSON.stringify(archival.slice(offset,offset+25))]);
+      }
+      if(archival.length)state.decisions=state.decisions.slice(0,ACTIVE_DECISION_LIMIT);
       const encoded=encodeState(state);
       await c.query('UPDATE jev_private.jev_terminal_state SET data=$2 WHERE id=$1',[id,encoded]);
-      return {state,hash:createHash('md5').update(encoded).digest('hex')};
+      return {state,hash:createHash('md5').update(encoded).digest('hex'),archived:archival.length};
     });
     this.stateCache.set(id,result);
+    if(result.archived)console.info(`Archived ${result.archived} historical decisions for edition ${id}`);
     return structuredClone(result.state);
   }
   async read(){return this.readRow(1);}

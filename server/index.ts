@@ -409,10 +409,12 @@ async function startWorker(){
       await configureGmgnRuntime(cloud.record('gmgn-cooldown'),()=>worker.assertActive());
       coinGecko.useBudget(cloud.record('coingecko-usage'));
     }
-    startupStep='paper session';
-    for(const runtime of Object.values(runtimes))await runtime.store.mutate(s=>restorePaperSession(s,
-      process.env[`PAPER_ARM_RELEASE_${runtime.edition.toUpperCase()}`],
-      enabledEditions.has(runtime.edition)&&launches.state.enabled&&runtime.monitor.state.enabled,randomUUID()));
+    for(const runtime of Object.values(runtimes)){
+      startupStep=`paper session ${runtime.edition}`;
+      await runtime.store.mutate(s=>restorePaperSession(s,
+        process.env[`PAPER_ARM_RELEASE_${runtime.edition.toUpperCase()}`],
+        enabledEditions.has(runtime.edition)&&launches.state.enabled&&runtime.monitor.state.enabled,randomUUID()));
+    }
     startupStep='worker activation';
     worker.enable();
     for(const {engine,providers} of activeRuntimes())void worker.run(async()=>{

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CloudStore, decodeState, encodeState } from './cloud-store.js';
 import { initialState } from './store.js';
 import type { MemoryEpisode } from '../src/memory.js';
+import type { Decision } from '../src/types.js';
 
 const url=process.env.JEV_EGRESS_TEST_POSTGRES_URL;
 const local=url?new URL(url):null;
@@ -55,6 +56,12 @@ describe.skipIf(!local || local.hostname!=='127.0.0.1' || local.port!=='55432')(
       expect((await journal.unreviewedOutcomes()).map(e=>e.id)).toEqual(outcomes.map(e=>e.id));
       expect(await journal.insert({...episode(4000),kind:'review',content:{episodeIds:outcomes.map(e=>e.id)}})).toBe(true);
       expect(await journal.unreviewedOutcomes()).toEqual([]);
+      const decisions=Array.from({length:103},(_,i)=>({id:`retention-${i}`,time:103-i} as Decision));
+      await cloud.kbwStore().mutate(s=>{s.decisions=decisions;});
+      expect((await cloud.kbwStore().read()).decisions.map(d=>d.id)).toEqual(decisions.slice(0,100).map(d=>d.id));
+      const archived=await pool.query<{id:string;data:Decision}>('SELECT id,data FROM jev_private.jev_decision_archive WHERE edition=2 AND id LIKE $1 ORDER BY time DESC',['retention-%']);
+      expect(archived.rows.map(r=>r.id)).toEqual(decisions.slice(100).map(d=>d.id));
+      expect(archived.rows.map(r=>r.data)).toEqual(decisions.slice(100));
       await cloud.release();
     } finally {await cloud.close();}
   });
