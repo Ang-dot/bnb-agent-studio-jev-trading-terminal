@@ -18,7 +18,12 @@
 .tt-network svg { color:#dca600; }
 .tt-session { display:flex; align-items:center; gap:19px; margin-left:auto; white-space:nowrap; font-size:12px; }
 .tt-session strong { font-size:16px; margin-left:6px; color:#192233; }
+.tt-portfolio-value { display:flex; align-items:center; gap:6px; }
+.tt-portfolio-value strong { margin-left:0; }
+.tt-portfolio-pnl { font-size:11px; color:#78839a; }
+.tt-portfolio-pnl>span { font-weight:700; }
 .tt-status { display:flex; gap:7px; align-items:center; color:#65718a; }
+@media(max-width:480px) { .tt-session { flex-wrap:wrap; row-gap:6px; } }
 .tt-header-tools { display:flex; gap:7px; }
 .tt-architecture-link { display:flex; align-items:center; gap:5px; min-height:34px; padding:0 9px; font-size:11px; color:#61708a; border:1px solid var(--tt-line); border-radius:6px; }
 .tt-architecture-link:hover { background:#f7f9fc; text-decoration:none; }

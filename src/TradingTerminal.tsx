@@ -222,6 +222,7 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
   const capturePhase = episode?.capture.status || phases.capture;
   const memoryConnection=state?.providers.find(p=>p.name===memoryName);
   const performance = state ? paperPerformance(state.ledger, launches, now) : null;
+  const portfolioPnl = performance?.equity == null || !state ? null : performance.equity - state.ledger.initialCashUsd;
   const symbol = launch?.symbol || pool?.symbol || (record && tokenForDecision(record, state?.pools ?? []) === selected ? record.name.split(" / ")[0] : "Select a launch");
   const marketCap = marketCapForToken(selected, launch, selectedDecisions[0]);
   const marketCapLabel = marketCap.recorded ? "Assessed mcap" : marketCap.observedAt != null && now-marketCap.observedAt>90_000 ? "Mcap · last seen" : "Mcap";
@@ -277,7 +278,7 @@ export function TradingTerminal({ onReplay }: { onReplay: () => void }) {
   return <div className="tt-app">
     <header className="tt-header">
       <div className="tt-brand"><img className="tt-chain-logo" src={bnbChainLogo} alt="BNB Chain" /><span className="tt-brand-divider" aria-hidden="true" /><div className="tt-product-brand"><TypeSafeLogo size={32} /><h1>Trading Terminal</h1></div></div>
-      <div className="tt-session"><span>Paper capital <strong>{dollars(state?.ledger.initialCashUsd)}</strong></span><span className="tt-status"><Circle size={8} fill="currentColor" className={state?.running && !state.halted ? "tt-positive" : "tt-muted"} /> {state?.halted ? "Safety locked" : state?.running ? "Autonomous" : "Not armed"}</span></div>
+      <div className="tt-session"><span className="tt-portfolio-value" title={performance?.equity == null ? "Portfolio value needs a fresh price for every open position" : "Available cash plus the current marked value of open paper positions"}>Paper portfolio <strong>{dollars(performance?.equity)}</strong><span className="tt-portfolio-pnl" title="Profit or loss versus starting paper capital">PnL <Money value={portfolioPnl} /></span></span><span className="tt-status"><Circle size={8} fill="currentColor" className={state?.running && !state.halted ? "tt-positive" : "tt-muted"} /> {state?.halted ? "Safety locked" : state?.running ? "Autonomous" : "Not armed"}</span></div>
       <div className="tt-header-tools"><a className="tt-architecture-link" href={architecturePath}>Architecture <ArrowUpRight size={14}/></a><button onClick={onReplay} title="Open historical JEV replay"><History size={15} /> Replay</button><button aria-label="Paper trading policy" title="Paper trading policy" onClick={() => setModal("policy")}><ShieldCheck size={18} /></button></div>
     </header>
 

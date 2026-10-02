@@ -394,25 +394,35 @@ let closing=false, starting=false;
 async function startWorker(){
   if(closing||starting||worker.active||!wantsWorker)return;
   starting=true;
+  let startupStep='lease';
   try {
     if(cloud){
       if(!await cloud.acquire())return;
+      startupStep='monitor state';
       for(const {monitor} of Object.values(runtimes))await monitor.init();
+      startupStep='replay state';
       await replays.init();
+      startupStep='launch feed';
       const prior=await cloud.record('launches').read();
       if(prior){const saved=JSON.parse(prior);if(saved.source!=='GMGN'||!Array.isArray(saved.launches))throw new Error('Invalid saved feed');launches.state=saved;}
+      startupStep='provider state';
       await configureGmgnRuntime(cloud.record('gmgn-cooldown'),()=>worker.assertActive());
       coinGecko.useBudget(cloud.record('coingecko-usage'));
     }
+    startupStep='paper session';
     for(const runtime of Object.values(runtimes))await runtime.store.mutate(s=>restorePaperSession(s,
       process.env[`PAPER_ARM_RELEASE_${runtime.edition.toUpperCase()}`],
       enabledEditions.has(runtime.edition)&&launches.state.enabled&&runtime.monitor.state.enabled,randomUUID()));
+    startupStep='worker activation';
     worker.enable();
     for(const {engine,providers} of activeRuntimes())void worker.run(async()=>{
       await providers.verifyMemoryAccess();await engine.discover();
     });
     void worker.run(async()=>{await launches.refresh();if(cloud)await cloud.record('launches').write(JSON.stringify(launches.state));await tickMonitors();});
-  } catch { console.error('Worker startup unavailable; no session armed'); }
+  } catch (error) {
+    const detail=error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Worker startup unavailable at ${startupStep}; no session armed: ${detail}`);
+  }
   finally {starting=false;}
 }
 await startWorker();
