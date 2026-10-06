@@ -16,7 +16,7 @@ A case can be selected with `/token2049?case=coin1&step=2`. The same placeholder
 
 ## Presentation scope
 
-BNB-COIN1–4 and the generic gold coin image are presentation placeholders, not real or BNB Chain-issued assets. This is an educational demonstration, not financial advice or a recommendation to trade.
+Token names and icons are placeholders for this demo. BNB Chain does not endorse the tokens shown. The demonstration is for education, not financial advice or a recommendation to trade.
 
 The historical candle values, time ranges and recorded model outputs are retained. Names, images, contracts, participant identities and identifying source links are replaced or omitted from the frontend and public downloads. Generalized evidence notes illustrate the remembered relationships. Published JSON files are explicitly labelled redacted presentation records; they are not original model request/response receipts. Original research is retained locally outside the published application and Git commit.
 

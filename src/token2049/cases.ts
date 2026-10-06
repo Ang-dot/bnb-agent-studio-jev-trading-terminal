@@ -55,7 +55,7 @@ export type CaseStudy = {
 };
 
 
-export const SOURCE_NOTICE = 'Educational demonstration only, not financial advice. BNB-COIN1–4 are presentation placeholders, not real assets or tokens issued or endorsed by BNB Chain.';
+export const SOURCE_NOTICE = 'For education only, not financial advice. Token names and icons are placeholders. BNB Chain does not endorse the tokens shown.';
 export const DEMO_NOTICE = 'Asset names, images, contracts, named participants and source links are replaced or omitted for this educational presentation. The historical chart values and recorded model outputs are retained. Curated historical model comparisons for a developer demonstration. JEV was evaluated offline with and without reconstructed prior context. WATCH and ENTRY are recorded model outputs, not instructions to trade. Public participation in a discussion does not establish token endorsement. The memory packets and 3D graph illustrate the proposed Living Brain integration; they are not recorded Living Brain API responses.';
 export const PRICE_NOTICE = 'GMGN historical candles · UTC · FDV uses total supply · assessment-time reference, no executed fill';
 
