@@ -1,0 +1,59 @@
+/* The selected chart owns its history, memory events and explanation controls. */
+.lb-trading .lb-carousel{height:750px}
+.lb-trading .lb-chart-card{width:68%;left:16%;padding:17px 17px 12px;gap:0}
+.lb-trading .lb-chart-card.is-foreground .lb-chart-heading{min-height:94px}
+.lb-trading .lb-chart-card.is-foreground .lb-chart-identity{gap:5px}
+.lb-trading .lb-chart-heading p{font-size:9px;margin-top:3px}
+.lb-trading .lb-chart-ticker{font-size:20px}
+.lb-chart-plot{position:relative;flex:1;min-height:200px;width:100%;isolation:isolate}
+.lb-chart-plot>.lb-price-chart{height:100%;min-height:200px}
+.lb-chart-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 8px;flex-shrink:0;min-width:0}
+.lb-chart-toolbar>span{font-size:8px;color:#7e8a99;white-space:nowrap;cursor:help}
+.lb-inline-ranges{display:inline-flex;gap:2px;padding:3px;background:#f0f3f7;border:1px solid #e4e9ee;border-radius:8px;min-width:0}
+.lb-inline-ranges>button{font-size:9px;white-space:nowrap;border:0;border-radius:5px;background:transparent;color:#7b8798;padding:6px 8px;line-height:1.2;transition:background .2s,color .2s}
+.lb-inline-ranges>button[aria-pressed=true]{color:#5b4712;background:#fff8df;box-shadow:0 1px 4px #29384f13;font-weight:650}
+.lb-inline-ranges>button:hover{color:#8c6b08;background:#fffbee}
+.lb-peak-summary{display:grid;grid-template-columns:1fr auto;gap:3px 12px;width:100%;background:linear-gradient(125deg,#f7fbf9,#fffdf4);border:1px solid #e5eee5;border-radius:10px;text-align:left;padding:11px 13px;color:#426356;flex-shrink:0;cursor:pointer}
+.lb-peak-heading{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:8px;letter-spacing:.8px;font-weight:600;color:#698774}
+.lb-peak-values{grid-row:2/4;display:flex;align-items:baseline;gap:9px;grid-column:1}
+.lb-peak-values>strong{font-size:26px;line-height:1.35;letter-spacing:-1px;font-weight:650;color:#16836b;white-space:nowrap}
+.lb-peak-values>span{font-size:11px;line-height:1.4;color:#588270;font-weight:550}
+.lb-peak-detail{font-size:9px;align-self:center;grid-column:2;grid-row:2;color:#6b7e72;white-space:nowrap}
+.lb-peak-footnote{font-size:8px;line-height:1.5;grid-column:2;grid-row:3;color:#8b998d;white-space:nowrap}
+.lb-peak-summary.is-watch{background:#f6f7f9;border-color:#e4e8ed}.lb-peak-summary.is-watch .lb-peak-values>strong{color:#7a8797}.lb-peak-summary.is-watch .lb-peak-heading{color:#8b96a5}
+.lb-memory-timeline{flex-shrink:0;min-width:0;margin-top:8px;padding:10px 0 8px;border-top:1px solid #edf0f3}
+.lb-chart-section-label{font-size:9px;letter-spacing:.15px;font-weight:600;color:#6e7d91;display:flex;justify-content:space-between;gap:8px;margin-bottom:7px}
+.lb-chart-section-label>span{font-size:8px;color:#a1aab7;font-weight:400}
+.lb-memory-events{display:flex;gap:7px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#e2d29b transparent;padding-bottom:4px}
+.lb-memory-events>button{flex:0 0 auto;min-width:115px;max-width:190px;display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #eee8d7;border-radius:7px;background:#fffdf7;color:#68768a;text-align:left}
+.lb-memory-events>button:hover{border-color:#dfbd4b;background:#fff8e1}
+.lb-event-index{height:15px;width:15px;flex-shrink:0;border-radius:50%;background:#f3e4ac;color:#8a6a15;display:grid;place-items:center;font-size:8px;font-weight:650}
+.lb-memory-events time{display:block;font-size:7px;color:#9d9e90;white-space:nowrap;margin-bottom:3px}
+.lb-memory-events strong{display:block;font-size:8px;line-height:1.3;font-weight:550;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-memory-timeline.is-excluded .lb-memory-events{opacity:.5}
+.lb-chart-context-controls{display:flex;align-items:center;gap:8px;border-top:1px solid #edf0f3;padding-top:8px;flex-shrink:0}
+.lb-context-play{display:grid;place-items:center;border:1px solid #eed681;border-radius:50%;width:27px;height:27px;background:#f0b90b;color:#5b470a;flex:0 0 auto}
+.lb-context-phases{display:flex;align-items:center;justify-content:space-between;flex:1;gap:5px}
+.lb-context-phases>button{display:flex;align-items:center;gap:5px;border:0;background:transparent;color:#98a2af;font-size:9px;white-space:nowrap;padding:5px 3px}
+.lb-context-phases>button>span{display:grid;place-items:center;border-radius:50%;height:16px;width:16px;background:#edf0f4;color:#a0a8b3;font-size:8px}
+.lb-context-phases>button[aria-current=step]{color:#8e6b0b;font-weight:600}.lb-context-phases>button[aria-current=step]>span{background:#f8e8ad;color:#896810}
+.lb-trading .lb-chart-bottom{font-size:7px;margin-top:8px}
+.lb-trading .lb-case-intro{margin-top:15px}
+.lb-trading .lb-coin-navigation{margin-top:6px}
+.lb-expanded-market{min-width:0}.lb-expanded-market .lb-peak-summary{padding:15px 18px}.lb-expanded-market .lb-peak-values>strong{font-size:31px}.lb-expanded-market .lb-inline-ranges>button{font-size:11px;padding:8px 12px}
+.lb-expanded-market .lb-chart-toolbar>span{font-size:10px}.lb-expanded-market .lb-chart-large{height:400px;position:relative}
+.lb-expanded-market .lb-memory-events>button{min-width:140px;padding:9px}.lb-expanded-market .lb-memory-events strong{font-size:10px}.lb-expanded-market .lb-memory-events time{font-size:8px}
+.lb-expanded-market .lb-context-phases{justify-content:flex-start;gap:24px}.lb-expanded-market .lb-context-phases>button{font-size:11px}
+.lb-metric-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.lb-metric-detail>div{padding:16px;border-radius:10px;border:1px solid #e8edf1;background:#f8fafc}.lb-metric-detail dt{font-size:10px;color:#8a98aa;margin-bottom:9px}.lb-metric-detail dd{font-size:20px;color:#344a5c;font-weight:600;letter-spacing:-.6px}.lb-metric-detail small{display:block;font-size:10px;color:#8c99aa;margin-top:7px;font-weight:400;letter-spacing:0}
+@media(min-width:1700px){.lb-trading .lb-carousel{height:800px}.lb-trading .lb-chart-card{width:66%;left:17%}.lb-chart-plot{min-height:260px}.lb-inline-ranges>button{font-size:10px}}
+@media(max-width:1190px) and (min-width:761px){.lb-trading .lb-chart-card{width:82%;left:9%;padding:13px 11px}.lb-peak-summary{grid-template-columns:1fr}.lb-peak-values{grid-row:2;grid-column:1}.lb-peak-detail{grid-row:3;grid-column:1}.lb-peak-footnote{grid-row:4;grid-column:1}.lb-peak-values>strong{font-size:25px}.lb-chart-toolbar{flex-wrap:wrap;gap:5px}.lb-inline-ranges>button{font-size:8px;padding:6px}.lb-trading .lb-carousel{height:795px}}
+@media(max-width:760px){.lb-trading .lb-carousel{height:730px}.lb-trading .lb-chart-card{width:78%;left:11%;padding:15px 12px}.lb-peak-summary{grid-template-columns:1fr}.lb-peak-values{grid-row:2;grid-column:1}.lb-peak-detail{grid-row:3;grid-column:1}.lb-peak-footnote{grid-row:4;grid-column:1}.lb-peak-values>strong{font-size:25px}.lb-chart-toolbar{gap:5px;flex-wrap:wrap}.lb-inline-ranges>button{font-size:9px;padding:6px 7px}.lb-chart-plot,.lb-chart-plot>.lb-price-chart{min-height:200px}.lb-trading .lb-chart-card.is-foreground .lb-chart-heading{min-height:87px}.lb-trading .lb-chart-heading .lb-chart-ticker{font-size:18px}.lb-context-phases>button{font-size:8px;gap:3px;padding-inline:1px}.lb-context-phases{gap:2px}.lb-event-index{display:none}.lb-expanded-market .lb-chart-large{height:310px}.lb-expanded-market .lb-inline-ranges>button{font-size:9px;padding:7px}.lb-expanded-market .lb-context-phases{justify-content:space-between;gap:4px}.lb-expanded-market .lb-context-phases>button{font-size:9px}}
+@media(max-width:420px){.lb-trading .lb-chart-card{width:79%;left:10.5%;padding:14px 11px}.lb-trading .lb-carousel{height:770px}.lb-inline-ranges>button{font-size:8px;padding:6px}.lb-chart-toolbar>span{font-size:8px}.lb-peak-values>strong{font-size:24px}.lb-peak-footnote{font-size:7px;white-space:normal}.lb-peak-detail{font-size:9px}.lb-memory-events>button{min-width:113px}.lb-chart-section-label{font-size:8px}.lb-chart-section-label>span{font-size:7px}.lb-context-phases>button>span{width:13px;height:13px;font-size:7px}.lb-metric-detail{grid-template-columns:1fr}.lb-context-play{width:23px;height:23px}}
+
+.lb-peak-date{display:flex;align-items:center;gap:7px;font-size:8px;font-weight:400;letter-spacing:0;white-space:nowrap}
+.lb-trading .lb-workspace-top{margin-bottom:10px}
+.lb-source-notice{margin:0 5px 22px;max-width:900px;color:#66758a;font-size:11px;line-height:1.6}
+.lb-source-attribution{font-weight:550;color:#66758a}
+
+.lb-app .lb-presentation-notice{display:flex;align-items:flex-start;gap:9px;margin:0 0 20px;padding:11px 14px;border:1px solid #f0b90b40;border-radius:10px;background:#f0b90b0a;color:#6c561f;font-size:11px;line-height:1.6}.lb-app .lb-presentation-notice svg{flex-shrink:0;margin-top:1px;color:#aa8009}

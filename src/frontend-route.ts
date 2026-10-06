@@ -2,7 +2,7 @@ export type FrontendEdition = 'kbw' | 'token2049';
 
 export interface FrontendRoute {
   edition: FrontendEdition;
-  page: 'terminal' | 'architecture';
+  page: 'terminal' | 'architecture' | 'build';
   terminalPath: string;
   architecturePath: string;
   redirectTo?: string;
@@ -13,13 +13,16 @@ export function frontendRoute(pathname: string): FrontendRoute {
   const operator = /^\/operator(?:\/|$)/.test(path);
   const localPath = operator ? path.slice('/operator'.length) || '/' : path;
   const editionMatch = localPath.match(/^\/(kbw|token2049)(?:\/|$)/);
+  // Only the public root changes default; legacy architecture and unknown paths stay KBW.
   // Existing operator URLs retain their original Living Brain edition.
-  const edition = (editionMatch?.[1] ?? (operator ? 'token2049' : 'kbw')) as FrontendEdition;
+  const edition = (editionMatch?.[1] ?? (operator || path === '/' ? 'token2049' : 'kbw')) as FrontendEdition;
   const terminalPath = operator
     ? `/operator${editionMatch ? `/${edition}` : ''}`
     : `/${edition}`;
   const architecturePath = `${terminalPath}/architecture`;
-  const page = path === architecturePath || localPath === '/architecture' ? 'architecture' : 'terminal';
+  const page = !operator && path === '/token2049/build'
+    ? 'build'
+    : path === architecturePath || localPath === '/architecture' ? 'architecture' : 'terminal';
   const redirectTo = !operator && (path === '/' || path === '/architecture')
     ? page === 'architecture' ? architecturePath : terminalPath
     : undefined;

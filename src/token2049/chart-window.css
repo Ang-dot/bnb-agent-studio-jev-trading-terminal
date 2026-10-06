@@ -1,0 +1,23 @@
+.lb-app .lb-chart-window { min-width: 0; margin: 0 0 16px; padding: 12px 0; border-top: 1px solid #e5eaf1; border-bottom: 1px solid #e5eaf1; }
+.lb-app .lb-chart-window-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lb-app .lb-chart-window-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.lb-app .lb-chart-window .lb-button { font-size: 10px; }
+.lb-app .lb-chart-window-caption, .lb-app .lb-chart-window-coverage { font-size: 10px; line-height: 1.6; color: #7a8ba2; margin-top: 9px; }
+.lb-app .lb-chart-window-coverage { color: #8c9bb0; font-size: 9px; }
+.lb-app .lb-chart-window-custom { margin-top: 8px; }
+.lb-app .lb-chart-window-custom > summary { font-size: 10px; color: #667b98; cursor: pointer; width: fit-content; padding: 3px 0; }
+.lb-app .lb-chart-window-custom > summary > span { color: #94a1b3; margin-left: 6px; font-size: 9px; }
+.lb-app .lb-chart-window-custom > form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: 10px; align-items: end; margin-top: 10px; }
+.lb-app .lb-chart-window-custom label { min-width: 0; display: flex; flex-direction: column; gap: 5px; color: #7788a0; font-size: 10px; }
+.lb-app .lb-chart-window-custom input { width: 100%; max-width: 100%; min-width: 0; border: 1px solid #dbe4ee; border-radius: 6px; padding: 7px; background: #fff; color: #53657e; font: inherit; font-size: 11px; line-height: 1.4; }
+.lb-app .lb-chart-window-range-note { grid-column: 1 / -1; margin: 0; font-size: 10px; line-height: 1.5; color: #8695aa; }
+@media (max-width: 850px) {
+  .lb-app .lb-chart-window-custom > form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lb-app .lb-chart-window-custom > form > .lb-button { justify-self: start; }
+}
+@media (max-width: 570px) {
+  .lb-app .lb-chart-window-custom > form { grid-template-columns: minmax(0, 1fr); }
+  .lb-app .lb-chart-window-toolbar { gap: 6px; }
+  .lb-app .lb-chart-window-presets { gap: 4px; }
+  .lb-app .lb-chart-window-presets .lb-button { padding-left: 8px; padding-right: 8px; }
+}

@@ -1,0 +1,289 @@
+{
+  "schemaVersion": "jev-placeholder-presentation-v1",
+  "presentation": {
+    "label": "BNB-COIN3",
+    "purpose": "Educational illustration of agent memory. Not financial advice or a recommendation to trade.",
+    "identity": "The token name and coin icon are placeholders for this demo. They do not represent a token issued by BNB Chain.",
+    "redactions": "Original asset names, contracts, named participants, direct source links and original request bodies are omitted. This is a redacted presentation record, not an original model receipt.",
+    "scope": "Historical chart values and recorded outputs are retained. The earlier policy tested narrative context; it did not measure community reaction or establish price causation."
+  },
+  "caseId": "coin3",
+  "model": "typesafe/jev-1.13-20260917",
+  "cutoff": "2025-03-14T15:35:00Z",
+  "policyVersion": "historical-linked-attention-signal-v2",
+  "summary": {
+    "repeatCount": 3,
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.15333333333333332,
+    "withEntryProbability": 0.7533333333333333
+  },
+  "sources": [
+    {
+      "id": "coin3-source-1",
+      "title": "Regional business context",
+      "url": "/assets/examples/coin3-record.json#coin3-source-1",
+      "publishedAt": "2025-03-12T23:59:59.999Z",
+      "availableAt": "2025-03-12T23:59:59.999Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A regional investment group announces a minority investment in the ecosystem company. This is regional business context; the recipient is the ecosystem company, not the BNB-COIN3 token."
+    },
+    {
+      "id": "coin3-source-2",
+      "title": "Earlier greeting",
+      "url": "/assets/examples/coin3-record.json#coin3-source-2",
+      "publishedAt": "2025-03-13T09:20:05.854Z",
+      "availableAt": "2025-03-13T09:20:05.854Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "An earlier post uses an Arabic greeting with a crescent-moon emoji. The greeting provides cultural context, without identifying a token contract or establishing token backing."
+    },
+    {
+      "id": "coin3-source-3",
+      "title": "Community meme association",
+      "url": "/assets/examples/coin3-record.json#coin3-source-3",
+      "publishedAt": "2025-03-13T22:07:02.726Z",
+      "availableAt": "2025-03-13T22:07:02.726Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "An image created by a community participant makes a visual association involving the BNB-COIN3 meme. The quote-post reacts to the artwork with a laughing emoji. The association originates in the community image; the post supplies neither a token contract nor official endorsement."
+    },
+    {
+      "id": "coin3-source-4",
+      "title": "Photo and greeting",
+      "url": "/assets/examples/coin3-record.json#coin3-source-4",
+      "publishedAt": "2025-03-14T15:33:41.579Z",
+      "availableAt": "2025-03-14T15:33:41.579Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A public post pairs an Arabic expression with a photo and quotes an earlier greeting. It names no token or contract. The earlier community imagery is separate context for the model’s interpretation."
+    }
+  ],
+  "outputs": [
+    {
+      "repeat": 1,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.75,
+          "probabilities": {
+            "unresolved": 0.81,
+            "prior_link": 0.13,
+            "contradicted": 0,
+            "direct": 0.06
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.67,
+          "probabilities": {
+            "new_attention": 0.76,
+            "belief_revision": 0,
+            "unclear": 0.12,
+            "routine": 0.12
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.69,
+          "probabilities": {
+            "watch": 0.79,
+            "entry_candidate": 0.18,
+            "ignore": 0.03
+          }
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.95,
+          "probabilities": {
+            "contradicted": 0,
+            "prior_link": 0.97,
+            "direct": 0.01,
+            "unresolved": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.98,
+          "probabilities": {
+            "routine": 0.01,
+            "belief_revision": 0,
+            "unclear": 0,
+            "new_attention": 0.99
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.65,
+          "probabilities": {
+            "ignore": 0.01,
+            "entry_candidate": 0.76,
+            "watch": 0.23
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.96,
+          "probabilities": {
+            "direct": 0.01,
+            "prior_link": 0.97,
+            "unresolved": 0.02,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.97,
+          "probabilities": {
+            "new_attention": 0.99,
+            "belief_revision": 0,
+            "routine": 0.01,
+            "unclear": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.63,
+          "probabilities": {
+            "entry_candidate": 0.75,
+            "watch": 0.24,
+            "ignore": 0.01
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.75,
+          "probabilities": {
+            "unresolved": 0.81,
+            "direct": 0.07,
+            "contradicted": 0,
+            "prior_link": 0.11
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.61,
+          "probabilities": {
+            "new_attention": 0.71,
+            "routine": 0.14,
+            "unclear": 0.15,
+            "belief_revision": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.75,
+          "probabilities": {
+            "ignore": 0.03,
+            "watch": 0.84,
+            "entry_candidate": 0.13
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.81,
+          "probabilities": {
+            "prior_link": 0.08,
+            "direct": 0.06,
+            "contradicted": 0,
+            "unresolved": 0.86
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.65,
+          "probabilities": {
+            "routine": 0.14,
+            "unclear": 0.12,
+            "new_attention": 0.74,
+            "belief_revision": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.7,
+          "probabilities": {
+            "entry_candidate": 0.15,
+            "ignore": 0.04,
+            "watch": 0.81
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.96,
+          "probabilities": {
+            "prior_link": 0.97,
+            "unresolved": 0.02,
+            "direct": 0.01,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.98,
+          "probabilities": {
+            "unclear": 0,
+            "routine": 0.01,
+            "belief_revision": 0,
+            "new_attention": 0.99
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.63,
+          "probabilities": {
+            "ignore": 0.01,
+            "watch": 0.24,
+            "entry_candidate": 0.75
+          }
+        }
+      }
+    }
+  ]
+}

@@ -20,10 +20,23 @@ describe('event frontend navigation', () => {
     }
   });
 
-  it('redirects the old public entry points to KBW without redirecting an event route', () => {
-    expect(frontendRoute('/').redirectTo).toBe('/kbw');
+  it('redirects the public root to the new terminal while preserving the legacy architecture destination', () => {
+    expect(frontendRoute('/')).toMatchObject({ edition: 'token2049', page: 'terminal', redirectTo: '/token2049' });
     expect(frontendRoute('/architecture/').redirectTo).toBe('/kbw/architecture');
     expect(frontendRoute('/token2049').redirectTo).toBeUndefined();
+    expect(frontendRoute('/unknown').edition).toBe('kbw');
+  });
+
+  it.each(['/token2049/build', '/token2049/build/'])('opens the public %s setup route in the same edition', path => {
+    expect(frontendRoute(path)).toEqual({
+      edition: 'token2049', page: 'build', terminalPath: '/token2049',
+      architecturePath: '/token2049/architecture', redirectTo: undefined,
+    });
+  });
+
+  it.each(['/kbw/build', '/operator/build', '/operator/kbw/build', '/operator/token2049/build', '/token2049/build/extra'])('does not add a build page to %s', path => {
+    expect(frontendRoute(path).page).toBe('terminal');
+    expect(frontendRoute(path).redirectTo).toBeUndefined();
   });
 
   it.each(['/operator', '/operator/kbw', '/operator/token2049'])('keeps %s navigation and API calls inside the protected prefix', path => {

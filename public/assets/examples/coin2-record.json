@@ -1,0 +1,307 @@
+{
+  "schemaVersion": "jev-placeholder-presentation-v1",
+  "presentation": {
+    "label": "BNB-COIN2",
+    "purpose": "Educational illustration of agent memory. Not financial advice or a recommendation to trade.",
+    "identity": "The token name and coin icon are placeholders for this demo. They do not represent a token issued by BNB Chain.",
+    "redactions": "Original asset names, contracts, named participants, direct source links and original request bodies are omitted. This is a redacted presentation record, not an original model receipt.",
+    "scope": "Historical chart values and recorded outputs are retained. The earlier policy tested narrative context; it did not measure community reaction or establish price causation."
+  },
+  "caseId": "coin2",
+  "model": "typesafe/jev-1.13-20260917",
+  "cutoff": "2025-09-21T17:08:00Z",
+  "policyVersion": "historical-linked-attention-signal-v2",
+  "summary": {
+    "repeatCount": 3,
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.04666666666666667,
+    "withEntryProbability": 0.5966666666666667
+  },
+  "sources": [
+    {
+      "id": "coin2-source-1",
+      "title": "Education project opens donations",
+      "url": "/assets/examples/coin2-record.json#coin2-source-1",
+      "publishedAt": "2025-09-21T15:07:13.062Z",
+      "availableAt": "2025-09-21T15:07:13.062Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "An education project announces public donations for education, contributor incentives and ecosystem work. Accepting donations does not establish that the recipient created or endorses a token."
+    },
+    {
+      "id": "coin2-source-2",
+      "title": "Donation-fee proposal",
+      "url": "/assets/examples/coin2-record.json#coin2-source-2",
+      "publishedAt": "2025-09-21T16:37:02.514Z",
+      "availableAt": "2025-09-21T16:37:02.514Z",
+      "attribution": "Project proponent (identity omitted)",
+      "content": "The proponent proposes a meme-token donation arrangement in which trading fees would support the education project. This records a participant’s proposal, rather than a verified operating mechanism."
+    },
+    {
+      "id": "coin2-source-3",
+      "title": "Selling-pressure concern",
+      "url": "/assets/examples/coin2-record.json#coin2-source-3",
+      "publishedAt": "2025-09-21T17:01:32.294Z",
+      "availableAt": "2025-09-21T17:01:32.294Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "The stated donation policy is to convert received meme tokens into major crypto assets before spending. The source also describes the potential selling pressure from that policy, giving context to the later mechanism discussion."
+    },
+    {
+      "id": "coin2-source-4",
+      "title": "Proposed donation route",
+      "url": "/assets/examples/coin2-record.json#coin2-source-4",
+      "publishedAt": "2025-09-21T17:03:01.491Z",
+      "availableAt": "2025-09-21T17:03:01.491Z",
+      "attribution": "Project proponent (identity omitted)",
+      "content": "The proponent says the proposed mechanism sends fees as BNB to the recipient, rather than sending meme tokens for the recipient to sell. This is the proponent’s explanation; contract behavior and transfers still require verification."
+    },
+    {
+      "id": "coin2-source-5",
+      "title": "Proponent identifies the market",
+      "url": "/assets/examples/coin2-record.json#coin2-source-5",
+      "publishedAt": "2025-09-21T17:06:14.988Z",
+      "availableAt": "2025-09-21T17:06:14.988Z",
+      "attribution": "Project proponent (identity omitted)",
+      "content": "A participant links a market pairing BNB-COIN2 with the network asset during the donation discussion, and the proponent confirms that reference. This records the proponent’s market identity claim, without validating the proposed fee mechanism."
+    },
+    {
+      "id": "coin2-source-6",
+      "title": "Donation clarification",
+      "url": "/assets/examples/coin2-record.json#coin2-source-6",
+      "publishedAt": "2025-09-21T17:07:14.007Z",
+      "availableAt": "2025-09-21T17:07:14.007Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A short reply acknowledges an earlier misunderstanding in the donation discussion. It does not name a token or explain the mechanism by itself; the earlier exchange supplies that context."
+    }
+  ],
+  "outputs": [
+    {
+      "repeat": 1,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.99,
+          "probabilities": {
+            "unresolved": 0.99,
+            "direct": 0,
+            "prior_link": 0.01,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.16,
+          "probabilities": {
+            "belief_revision": 0.29,
+            "routine": 0.01,
+            "new_attention": 0.38,
+            "unclear": 0.32
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.9,
+          "probabilities": {
+            "watch": 0.93,
+            "ignore": 0.02,
+            "entry_candidate": 0.05
+          }
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.84,
+          "probabilities": {
+            "direct": 0.03,
+            "unresolved": 0.08,
+            "prior_link": 0.87,
+            "contradicted": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "belief_revision",
+          "confidence": 0.7,
+          "probabilities": {
+            "new_attention": 0.19,
+            "routine": 0,
+            "belief_revision": 0.78,
+            "unclear": 0.03
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.36,
+          "probabilities": {
+            "ignore": 0.18,
+            "watch": 0.24,
+            "entry_candidate": 0.58
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.84,
+          "probabilities": {
+            "unresolved": 0.07,
+            "direct": 0.02,
+            "prior_link": 0.89,
+            "contradicted": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "belief_revision",
+          "confidence": 0.72,
+          "probabilities": {
+            "routine": 0,
+            "belief_revision": 0.79,
+            "unclear": 0.03,
+            "new_attention": 0.18
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.44,
+          "probabilities": {
+            "watch": 0.22,
+            "entry_candidate": 0.62,
+            "ignore": 0.16
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.99,
+          "probabilities": {
+            "prior_link": 0.01,
+            "direct": 0,
+            "contradicted": 0,
+            "unresolved": 0.99
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.11,
+          "probabilities": {
+            "unclear": 0.33,
+            "routine": 0.01,
+            "new_attention": 0.33,
+            "belief_revision": 0.33
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.9,
+          "probabilities": {
+            "watch": 0.93,
+            "entry_candidate": 0.05,
+            "ignore": 0.02
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.99,
+          "probabilities": {
+            "unresolved": 1,
+            "contradicted": 0,
+            "direct": 0,
+            "prior_link": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.21,
+          "probabilities": {
+            "new_attention": 0.41,
+            "unclear": 0.3,
+            "routine": 0.01,
+            "belief_revision": 0.28
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.9,
+          "probabilities": {
+            "watch": 0.94,
+            "ignore": 0.02,
+            "entry_candidate": 0.04
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.87,
+          "probabilities": {
+            "unresolved": 0.06,
+            "direct": 0.03,
+            "prior_link": 0.89,
+            "contradicted": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "belief_revision",
+          "confidence": 0.73,
+          "probabilities": {
+            "belief_revision": 0.81,
+            "routine": 0,
+            "new_attention": 0.15,
+            "unclear": 0.04
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.39,
+          "probabilities": {
+            "watch": 0.21,
+            "ignore": 0.2,
+            "entry_candidate": 0.59
+          }
+        }
+      }
+    }
+  ]
+}

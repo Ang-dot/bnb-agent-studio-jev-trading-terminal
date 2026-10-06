@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "jev-placeholder-periods-v1",
+  "scope": "Educational historical illustration with placeholder asset identities. Not financial advice. Historical numeric values are retained; original contracts and token-specific source URLs are omitted.",
+  "sourceArchiveSha256": "f44fdee5c139013e8a6704652286149e69b6ce7b611548a5b848e02b4b5cfcb2",
+  "displaySourceArchiveSha256": "3a562dbafff8efce7ff17271217eac96b494974114cd836e9487c0ba897b9317",
+  "formula": "Observed price change = (period high / assessment reference - 1) × 100",
+  "cases": {
+    "coin1": {
+      "period": {
+        "from": 1738800000,
+        "to": 1758585600,
+        "label": "6 Feb – 22 Sept 2025",
+        "note": "Retrospectively selected case-study period, from the earliest captured launch day through two calendar days after this narrative-cycle high. This is a display window, not an assumed holding period or trade exit."
+      },
+      "entry": {
+        "time": 1742197500,
+        "candleOpenTime": 1742197380,
+        "candleCloseTime": 1742197440,
+        "price": 0.002233394
+      },
+      "supply": {
+        "tokens": 1000000000,
+        "label": "FDV",
+        "basis": "Illustrative fully diluted value: recorded USD price multiplied by the archived total supply. Historical circulating supply is unverified.",
+        "verifiedAt": "2026-10-04T23:57:29.316497+00:00",
+        "historicalMarketCapAvailable": false,
+        "sourceNote": "Total supply is retained only to reproduce the historical FDV illustration. Asset identity and token-specific source links are omitted."
+      },
+      "dailyCandleCount": 229,
+      "peak": {
+        "time": 1758326400,
+        "intervalSeconds": 86400,
+        "price": 0.18597036,
+        "multiple": 83.26804853957698,
+        "changePercent": 8226.804853957698,
+        "note": "Recorded period high: the greatest observed post-decision daily high inside the selected display period. Its timestamp is the candle interval open; the exact trade time is unknown. The reference is a completed minute candle, not a fill. Endpoint ratios omit the intervening price path, fees, taxes, slippage and liquidity."
+      },
+      "display": {
+        "candleCount": 229,
+        "intervalSeconds": 86400,
+        "intervalLabel": "1D",
+        "peakTime": 1758326400,
+        "coverage": {
+          "from": 1738800000,
+          "to": 1758585600,
+          "missingIntervals": [],
+          "leadingEmptyIntervals": 0,
+          "note": "Native GMGN candles, without interpolation or aggregation. Leading UTC buckets before the first observed trading candle are absent."
+        }
+      }
+    },
+    "coin2": {
+      "period": {
+        "from": 1758412800,
+        "to": 1761609600,
+        "label": "21 Sept – 27 Oct 2025",
+        "note": "Retrospectively selected case-study period, from the earliest captured launch day through two calendar days after this narrative-cycle high. This is a display window, not an assumed holding period or trade exit."
+      },
+      "entry": {
+        "time": 1758474480,
+        "candleOpenTime": 1758474420,
+        "candleCloseTime": 1758474480,
+        "price": 3.37188713
+      },
+      "supply": {
+        "tokens": 1000000,
+        "label": "FDV",
+        "basis": "Illustrative fully diluted value: recorded USD price multiplied by the archived total supply. Historical circulating supply is unverified.",
+        "verifiedAt": "2026-10-04T23:57:29.316497+00:00",
+        "historicalMarketCapAvailable": false,
+        "sourceNote": "Total supply is retained only to reproduce the historical FDV illustration. Asset identity and token-specific source links are omitted."
+      },
+      "dailyCandleCount": 37,
+      "peak": {
+        "time": 1761350400,
+        "intervalSeconds": 86400,
+        "price": 294.90464454,
+        "multiple": 87.4598209163662,
+        "changePercent": 8645.982091636619,
+        "note": "Recorded period high: the greatest observed post-decision daily high inside the selected display period. Its timestamp is the candle interval open; the exact trade time is unknown. The reference is a completed minute candle, not a fill. Endpoint ratios omit the intervening price path, fees, taxes, slippage and liquidity."
+      },
+      "display": {
+        "candleCount": 218,
+        "intervalSeconds": 14400,
+        "intervalLabel": "4H",
+        "peakTime": 1761364800,
+        "coverage": {
+          "from": 1758470400,
+          "to": 1761609600,
+          "missingIntervals": [],
+          "leadingEmptyIntervals": 4,
+          "note": "Native GMGN candles, without interpolation or aggregation. Leading UTC buckets before the first observed trading candle are absent."
+        }
+      }
+    },
+    "coin3": {
+      "period": {
+        "from": 1741824000,
+        "to": 1742515200,
+        "label": "13 Mar – 20 Mar 2025",
+        "note": "Retrospectively selected case-study period, from the earliest captured launch day through two calendar days after this narrative-cycle high. This is a display window, not an assumed holding period or trade exit."
+      },
+      "entry": {
+        "time": 1741966500,
+        "candleOpenTime": 1741966440,
+        "candleCloseTime": 1741966500,
+        "price": 0.0062887072
+      },
+      "supply": {
+        "tokens": 1000000000,
+        "label": "FDV",
+        "basis": "Illustrative fully diluted value: recorded USD price multiplied by the archived total supply. Historical circulating supply is unverified.",
+        "verifiedAt": "2026-10-04T23:57:29.316497+00:00",
+        "historicalMarketCapAvailable": false,
+        "sourceNote": "Total supply is retained only to reproduce the historical FDV illustration. Asset identity and token-specific source links are omitted."
+      },
+      "dailyCandleCount": 8,
+      "peak": {
+        "time": 1742256000,
+        "intervalSeconds": 86400,
+        "price": 0.27092449,
+        "multiple": 43.081110534133316,
+        "changePercent": 4208.111053413331,
+        "note": "Recorded period high: the greatest observed post-decision daily high inside the selected display period. Its timestamp is the candle interval open; the exact trade time is unknown. The reference is a completed minute candle, not a fill. Endpoint ratios omit the intervening price path, fees, taxes, slippage and liquidity."
+      },
+      "display": {
+        "candleCount": 183,
+        "intervalSeconds": 3600,
+        "intervalLabel": "1H",
+        "peakTime": 1742317200,
+        "coverage": {
+          "from": 1741856400,
+          "to": 1742515200,
+          "missingIntervals": [],
+          "leadingEmptyIntervals": 9,
+          "note": "Native GMGN candles, without interpolation or aggregation. Leading UTC buckets before the first observed trading candle are absent."
+        }
+      }
+    },
+    "coin4": {
+      "period": {
+        "from": 1759536000,
+        "to": 1760140800,
+        "label": "4 Oct – 10 Oct 2025",
+        "note": "Retrospectively selected case-study period, from the earliest captured launch day through two calendar days after this narrative-cycle high. This is a display window, not an assumed holding period or trade exit."
+      },
+      "entry": {
+        "time": 1759681680,
+        "candleOpenTime": 1759681620,
+        "candleCloseTime": 1759681680,
+        "price": 0.0044539067
+      },
+      "supply": {
+        "tokens": 1000000000,
+        "label": "FDV",
+        "basis": "Illustrative fully diluted value: recorded USD price multiplied by the archived total supply. Historical circulating supply is unverified.",
+        "verifiedAt": "2026-10-04T23:57:29.316497+00:00",
+        "historicalMarketCapAvailable": false,
+        "sourceNote": "Total supply is retained only to reproduce the historical FDV illustration. Asset identity and token-specific source links are omitted."
+      },
+      "dailyCandleCount": 7,
+      "peak": {
+        "time": 1759881600,
+        "intervalSeconds": 86400,
+        "price": 0.52293423,
+        "multiple": 117.41023448021487,
+        "changePercent": 11641.023448021488,
+        "note": "Recorded period high: the greatest observed post-decision daily high inside the selected display period. Its timestamp is the candle interval open; the exact trade time is unknown. The reference is a completed minute candle, not a fill. Endpoint ratios omit the intervening price path, fees, taxes, slippage and liquidity."
+      },
+      "display": {
+        "candleCount": 153,
+        "intervalSeconds": 3600,
+        "intervalLabel": "1H",
+        "peakTime": 1759896000,
+        "coverage": {
+          "from": 1759590000,
+          "to": 1760140800,
+          "missingIntervals": [],
+          "leadingEmptyIntervals": 15,
+          "note": "Native GMGN candles, without interpolation or aggregation. Leading UTC buckets before the first observed trading candle are absent."
+        }
+      }
+    }
+  }
+}
