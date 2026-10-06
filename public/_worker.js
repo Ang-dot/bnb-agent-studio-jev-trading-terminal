@@ -2,6 +2,16 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // Retired presentation files may remain in the asset cache after deployment.
+    // Stop these paths before reaching ASSETS; publish only the generic coin icon.
+    let assetPath;
+    try { assetPath = decodeURIComponent(url.pathname).replace(/\/{2,}/g, '/'); }
+    catch { return new Response(null, {status:400}); }
+    const retiredResearch = /^\/assets\/research(?:\/|$)/.test(assetPath);
+    const retiredCoin = /^\/assets\/coins(?:\/|$)/.test(assetPath) && assetPath !== '/assets/coins/coin.svg';
+    if (retiredResearch || retiredCoin) {
+      return new Response(null, {status:410, headers:{'Cache-Control':'no-store','X-Robots-Tag':'noindex'}});
+    }
     const publicPath = url.pathname.replace(/\/+$/, '') || '/';
     if (['GET', 'HEAD'].includes(request.method) && (publicPath === '/' || publicPath === '/architecture')) {
       url.pathname = publicPath === '/' ? '/token2049' : '/kbw/architecture';
