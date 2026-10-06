@@ -4,7 +4,7 @@ export default {
     const url = new URL(request.url);
     const publicPath = url.pathname.replace(/\/+$/, '') || '/';
     if (['GET', 'HEAD'].includes(request.method) && (publicPath === '/' || publicPath === '/architecture')) {
-      url.pathname = publicPath === '/' ? '/kbw' : '/kbw/architecture';
+      url.pathname = publicPath === '/' ? '/token2049' : '/kbw/architecture';
       return Response.redirect(url.toString(), 302);
     }
     const operator = url.pathname === '/operator' || url.pathname.startsWith('/operator/');
@@ -44,7 +44,7 @@ export default {
     }
     // Pages redirects /index.html to /. Read the root asset internally so the
     // browser keeps its event edition or authenticated operator path.
-    if (operator || /^\/(kbw|token2049)(?:\/architecture)?\/?$/.test(url.pathname)) {url.pathname='/';return env.ASSETS.fetch(new Request(url,request));}
+    if (operator || /^\/(kbw|token2049)(?:\/architecture)?\/?$/.test(url.pathname) || /^\/token2049\/build\/?$/.test(url.pathname)) {url.pathname='/';return env.ASSETS.fetch(new Request(url,request));}
     return env.ASSETS.fetch(request);
   },
 };

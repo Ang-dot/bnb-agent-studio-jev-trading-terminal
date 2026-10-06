@@ -1,0 +1,69 @@
+.lb-app .lb-decision-impact { container-type: inline-size; min-width: 0; padding: 15px; border: 1px solid #e3e8ef; border-radius: 16px; background: linear-gradient(150deg, #fffffff7, #ffffffd9); box-shadow: 0 5px 25px #293c5610, inset 0 1px 0 #fff; }
+.lb-app .lb-impact-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.lb-app .lb-impact-heading h3 { font-size: 17px; font-weight: 650; line-height: 1.35; letter-spacing: -.45px; color: #18212f; }
+.lb-app .lb-impact-status { flex: 0 0 auto; border: 1px solid #e2e7ee; padding: 3px 7px; border-radius: 20px; background: #f5f7fa; color: #6b788b; font-size: 9px; line-height: 1.3; font-weight: 600; }
+.lb-app .lb-impact-status.is-tested { color: #77704a; background: #fff9e9; border-color: #ecdfa8; }
+.lb-app .lb-impact-handoff { display: flex; align-items: center; gap: 13px; margin-top: 10px; padding-bottom: 9px; border-bottom: 1px solid #edf0f4; }
+.lb-app .lb-impact-brand { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; color: #273346; font-size: 11px; font-weight: 650; }
+.lb-app .lb-impact-brand img { width: 25px; height: 25px; object-fit: contain; }
+.lb-app .lb-impact-connector { display: flex; flex: 1 1 40px; align-items: center; gap: 5px; color: #a08c4d; min-width: 28px; }
+.lb-app .lb-impact-connector::before { content: ''; height: 1px; flex: 1; background: linear-gradient(90deg, #e5dab1, #bea85e); }
+.lb-app .lb-impact-connector span { font-size: 9px; }
+.lb-app .lb-impact-context { margin-top: 10px; }
+.lb-app .lb-impact-context h4 { color: #3a485b; font-size: 12px; font-weight: 650; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-app .lb-impact-context p { margin-top: 3px; color: #6b7a8e; font-size: 11px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lb-app .lb-impact-sources { margin-top: 5px; }
+.lb-app .lb-impact-sources > summary { min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 9px; color: #7788a0; font-size: 10px; cursor: pointer; list-style: none; }
+.lb-app .lb-impact-sources > summary::-webkit-details-marker { display: none; }
+.lb-app .lb-impact-sources > summary svg { transition: transform .16s; }
+.lb-app .lb-impact-sources[open] > summary svg { transform: rotate(180deg); }
+.lb-app .lb-impact-sources > summary:hover { color: #705b1d; }
+.lb-app .lb-impact-source-more { color: #7b8c9f; font-size: 10px; padding: 5px 0; }
+.lb-app .lb-impact-memories { display: grid; gap: 6px; margin: 3px 0 5px; padding: 0; list-style: none; }
+.lb-app .lb-impact-memories li { min-width: 0; }
+.lb-app .lb-impact-memories a { display: block; border: 1px solid #e4eaf1; border-radius: 9px; padding: 8px 10px; background: #f8fafcbb; transition: border-color .16s, background .16s; }
+.lb-app .lb-impact-memories a:hover { border-color: #d8c783; background: #fffbef; }
+.lb-app .lb-impact-memory-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #8593a7; font-size: 9px; line-height: 1.4; }
+.lb-app .lb-impact-memories strong { display: block; margin-top: 3px; color: #43546c; font-size: 11px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.lb-app .lb-impact-relationship { display: block; margin-top: 2px; color: #7b8c9f; font-size: 10px; line-height: 1.4; }
+.lb-app .lb-impact-event { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; padding-top: 8px; border-top: 1px solid #edf0f4; }
+.lb-app .lb-impact-event > strong { font-size: 10px; line-height: 1.4; font-weight: 600; color: #6a7d95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-app .lb-impact-event > time { font-size: 9px; line-height: 1.5; color: #8593a5; }
+.lb-app .lb-impact-decisions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 9px; }
+.lb-app .lb-impact-decision { min-width: 0; display: flex; flex-direction: column; padding: 10px; border: 1px solid #e2e8ef; border-radius: 11px; background: #f9fbfd; transition: background .16s, border-color .16s, box-shadow .16s; }
+.lb-app .lb-impact-decision.is-active { background: linear-gradient(155deg, #fffcf3, #fffdf9); border-color: #ddc56e; box-shadow: 0 0 0 1px #efdda533; }
+.lb-app .lb-impact-decision-label { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; color: #78879a; font-size: 10px; line-height: 1.35; min-height: 27px; }
+.lb-app .lb-impact-active { display: inline-flex; flex: 0 0 auto; align-items: center; color: #8e731c; }
+.lb-app .lb-impact-action { display: flex; align-items: center; min-height: 45px; margin: 5px 0 6px; color: #445872; font-size: 21px; font-weight: 700; line-height: 1.07; letter-spacing: -.65px; overflow-wrap: anywhere; }
+.lb-app .lb-impact-action.is-entry { color: #258c78; }
+.lb-app .lb-impact-action.is-exit { color: #b76b73; }
+.lb-app .lb-impact-action.is-pending { color: #8d99aa; font-size: 18px; line-height: 1.25; letter-spacing: -.35px; }
+.lb-app .lb-impact-reason { color: #6b7d94; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lb-app .lb-impact-probability { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; padding-top: 9px; margin-top: auto; color: #8491a2; font-size: 9px; line-height: 1.4; }
+.lb-app .lb-impact-probability strong { color: #435974; font-size: 17px; font-weight: 650; line-height: 1.2; }
+.lb-app .lb-impact-signal-caption { margin-top: 5px; font-size: 9px; color: #8491a2; line-height: 1.4; }
+.lb-app .lb-impact-source-limit { margin-top: 9px; padding: 9px 10px; border-left: 2px solid #dfca84; border-radius: 0 6px 6px 0; background: #fbf9f1; color: #6a716e; font-size: 10px; line-height: 1.5; }
+.lb-app .lb-impact-source-limit strong { display: block; margin-bottom: 2px; font-size: 9px; font-weight: 650; color: #827043; }
+.lb-app .lb-impact-selection { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 9px; color: #60738d; font-size: 11px; }
+.lb-app .lb-impact-toggle { position: relative; flex: 0 0 44px; width: 44px; height: 44px; margin-block: -10px; padding: 0; border: 0; border-radius: 8px; background: transparent; }
+.lb-app .lb-impact-toggle::before { content: ''; position: absolute; width: 35px; height: 21px; left: 4px; top: 11px; border: 1px solid #d2dce8; border-radius: 30px; background: #e8edf3; transition: background .16s, border-color .16s; }
+.lb-app .lb-impact-toggle > span { position: absolute; top: 15px; left: 8px; display: block; width: 13px; height: 13px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0e254526; transition: transform .16s; }
+.lb-app .lb-impact-toggle.is-on::before { background: #f0b90b; border-color: #e7b00a; }
+.lb-app .lb-impact-toggle.is-on > span { transform: translateX(14px); }
+.lb-app .lb-impact-run-details { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; color: #8b97a7; font-size: 9px; line-height: 1.5; }
+.lb-app .lb-impact-run-details > span { min-width: 0; overflow-wrap: anywhere; }
+.lb-app .lb-impact-run-details :is(a,button) { display: inline-flex; align-items: center; gap: 3px; color: #778ba5; }
+.lb-app .lb-impact-run-details :is(a,button):hover { color: #765b0c; }
+.lb-app .lb-impact-inspect { width: 100%; justify-content: flex-start; margin-top: 9px; min-height: 34px; padding: 8px 10px; font-size: 11px; white-space: normal; line-height: 1.4; }
+.lb-app .lb-impact-inspect > svg:last-child { margin-left: auto; }
+@container (max-width: 280px) {
+  .lb-app .lb-impact-decisions { grid-template-columns: minmax(0, 1fr); }
+  .lb-app .lb-impact-decision-label { min-height: 0; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+  .lb-app .lb-impact-handoff { gap: 8px; }
+  .lb-app .lb-impact-connector span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lb-app .lb-decision-impact *, .lb-app .lb-decision-impact *::before { transition: none; }
+}
+
+.lb-app .lb-impact-run-details button { border:0; background:none; padding:0; font:inherit; cursor:pointer; }

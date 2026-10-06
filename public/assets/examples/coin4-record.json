@@ -1,0 +1,298 @@
+{
+  "schemaVersion": "jev-placeholder-presentation-v1",
+  "presentation": {
+    "label": "BNB-COIN4",
+    "purpose": "Educational illustration of agent memory. Not financial advice or a recommendation to trade.",
+    "identity": "This label and generic coin icon are placeholders, not real or BNB Chain-issued assets.",
+    "redactions": "Original asset names, contracts, named participants, direct source links and original request bodies are omitted. This is a redacted presentation record, not an original model receipt.",
+    "scope": "Historical chart values and recorded outputs are retained. The earlier policy tested narrative context; it did not measure community reaction or establish price causation."
+  },
+  "caseId": "coin4",
+  "model": "typesafe/jev-1.13-20260917",
+  "cutoff": "2025-10-05T16:28:00Z",
+  "policyVersion": "historical-linked-attention-signal-v2",
+  "summary": {
+    "repeatCount": 3,
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.3633333333333333,
+    "withEntryProbability": 0.9566666666666667
+  },
+  "sources": [
+    {
+      "id": "coin4-source-1",
+      "title": "The community phrase",
+      "url": "/assets/examples/coin4-record.json#coin4-source-1",
+      "publishedAt": "2025-10-04T14:41:41.943Z",
+      "availableAt": "2025-10-04T14:41:41.943Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A community author introduces an ecosystem-themed version of a Chinese meme blessing ending with the community phrase. This records the community phrase before the token-creation event; the post does not identify a contract."
+    },
+    {
+      "id": "coin4-source-2",
+      "title": "Earlier phrase discussion",
+      "url": "/assets/examples/coin4-record.json#coin4-source-2",
+      "publishedAt": "2025-10-04T15:00:16.772Z",
+      "availableAt": "2025-10-04T15:00:16.772Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A participant thanks the community author and repeats the community phrase. This is a reply about the wording, with no token contract or token endorsement in the post."
+    },
+    {
+      "id": "coin4-source-3",
+      "title": "Token creation record",
+      "url": "/assets/examples/coin4-record.json#coin4-source-3",
+      "publishedAt": "2025-10-04T15:00:41Z",
+      "availableAt": "2025-10-04T15:00:41Z",
+      "attribution": "Redacted project or token record",
+      "content": "A historical creation event on a token-launch platform records the community phrase as the token’s name, alongside its contract on BNB Chain. The on-chain record identifies the asset; it makes no statement about official affiliation or any founder’s endorsement."
+    },
+    {
+      "id": "coin4-source-4",
+      "title": "Community contract claim",
+      "url": "/assets/examples/coin4-record.json#coin4-source-4",
+      "publishedAt": "2025-10-04T16:49:59.769Z",
+      "availableAt": "2025-10-04T16:49:59.769Z",
+      "attribution": "Redacted project or token record",
+      "content": "A community participant supplies the token’s contract and describes his own purchase and narrative interpretation. He also warns that the token could go to zero. The post records that participant’s claims, rather than a verified purchase or a community-wide view."
+    },
+    {
+      "id": "coin4-source-5",
+      "title": "The phrase reappears",
+      "url": "/assets/examples/coin4-record.json#coin4-source-5",
+      "publishedAt": "2025-10-05T16:27:41.435Z",
+      "availableAt": "2025-10-05T16:27:41.435Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A public reply repeats the community phrase in a community conversation about relationships and meeting people at an event. Neither the reply nor its parent identifies a token contract; the earlier community and creation records supply that separate connection."
+    }
+  ],
+  "outputs": [
+    {
+      "repeat": 1,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.44,
+          "probabilities": {
+            "direct": 0.25,
+            "prior_link": 0.16,
+            "unresolved": 0.58,
+            "contradicted": 0.01
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.96,
+          "probabilities": {
+            "new_attention": 0.98,
+            "belief_revision": 0,
+            "routine": 0.02,
+            "unclear": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.39,
+          "probabilities": {
+            "entry_candidate": 0.36,
+            "watch": 0.59,
+            "ignore": 0.05
+          }
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.8,
+          "probabilities": {
+            "direct": 0.14,
+            "unresolved": 0.01,
+            "prior_link": 0.85,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.99,
+          "probabilities": {
+            "belief_revision": 0,
+            "routine": 0.01,
+            "new_attention": 0.99,
+            "unclear": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.93,
+          "probabilities": {
+            "watch": 0.04,
+            "ignore": 0,
+            "entry_candidate": 0.96
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.84,
+          "probabilities": {
+            "prior_link": 0.88,
+            "unresolved": 0.01,
+            "direct": 0.11,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.99,
+          "probabilities": {
+            "routine": 0.01,
+            "unclear": 0,
+            "belief_revision": 0,
+            "new_attention": 0.99
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.94,
+          "probabilities": {
+            "ignore": 0,
+            "watch": 0.04,
+            "entry_candidate": 0.96
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.41,
+          "probabilities": {
+            "direct": 0.28,
+            "prior_link": 0.15,
+            "unresolved": 0.55,
+            "contradicted": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.95,
+          "probabilities": {
+            "new_attention": 0.96,
+            "belief_revision": 0,
+            "unclear": 0.01,
+            "routine": 0.03
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.44,
+          "probabilities": {
+            "ignore": 0.05,
+            "watch": 0.63,
+            "entry_candidate": 0.32
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.26,
+          "probabilities": {
+            "direct": 0.3,
+            "contradicted": 0.01,
+            "prior_link": 0.24,
+            "unresolved": 0.45
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.96,
+          "probabilities": {
+            "unclear": 0,
+            "routine": 0.02,
+            "new_attention": 0.98,
+            "belief_revision": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.31,
+          "probabilities": {
+            "watch": 0.53,
+            "ignore": 0.06,
+            "entry_candidate": 0.41
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.83,
+          "probabilities": {
+            "unresolved": 0.01,
+            "direct": 0.11,
+            "prior_link": 0.88,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.99,
+          "probabilities": {
+            "belief_revision": 0,
+            "routine": 0.01,
+            "new_attention": 0.99,
+            "unclear": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.91,
+          "probabilities": {
+            "watch": 0.05,
+            "ignore": 0,
+            "entry_candidate": 0.95
+          }
+        }
+      }
+    }
+  ]
+}

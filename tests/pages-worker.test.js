@@ -6,14 +6,14 @@ afterEach(()=>vi.unstubAllGlobals());
 describe('Pages event routes',()=>{
   it.each(['GET','HEAD'])('redirects legacy %s entry points while preserving query strings',async method=>{
     const asset=vi.fn();
-    for(const [path,target] of [['/','/kbw'],['/architecture/','/kbw/architecture']]){
+    for(const [path,target] of [['/','/token2049'],['/architecture/','/kbw/architecture']]){
       const response=await worker.fetch(new Request(url+path+'?source=event',{method}),{ASSETS:{fetch:asset}});
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe(url+target+'?source=event');
     }
     expect(asset).not.toHaveBeenCalled();
   });
-  it.each(['/kbw','/kbw/','/kbw/architecture','/token2049','/token2049/architecture/','/operator/kbw','/operator/token2049/architecture'])('serves %s as an app shell without redirecting its event path',async path=>{
+  it.each(['/kbw','/kbw/','/kbw/architecture','/token2049','/token2049/architecture/','/token2049/build','/token2049/build/','/operator/kbw','/operator/token2049/architecture'])('serves %s as an app shell without redirecting its event path',async path=>{
     const asset=vi.fn(async request=>new Response(new URL(request.url).pathname));
     const response=await worker.fetch(new Request(url+path),{...env,ASSETS:{fetch:asset}});
     expect(response.status).toBe(200);
@@ -24,6 +24,20 @@ describe('Pages event routes',()=>{
     const asset=vi.fn(async request=>new Response(new URL(request.url).pathname));
     const response=await worker.fetch(new Request(url+'/assets/terminal.js'),{...env,ASSETS:{fetch:asset}});
     expect(await response.text()).toBe('/assets/terminal.js');
+  });
+  it.each(['GET','HEAD'])('serves the build shell for %s with query parameters and without a configured backend',async method=>{
+    const upstream=vi.fn();vi.stubGlobal('fetch',upstream);
+    const asset=vi.fn(async request=>new Response(new URL(request.url).search));
+    const response=await worker.fetch(new Request(url+'/token2049/build?assistant=claude',{method}),{ASSETS:{fetch:asset}});
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('?assistant=claude');
+    expect(asset.mock.calls[0][0].method).toBe(method);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+  it.each(['/kbw/build','/token2049/build/extra'])('does not claim %s as a new application route',async path=>{
+    const asset=vi.fn(async request=>new Response(new URL(request.url).pathname));
+    const response=await worker.fetch(new Request(url+path),{ASSETS:{fetch:asset}});
+    expect(await response.text()).toBe(path);
   });
 });
 describe('Pages API boundary',()=>{

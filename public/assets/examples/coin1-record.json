@@ -1,0 +1,280 @@
+{
+  "schemaVersion": "jev-placeholder-presentation-v1",
+  "presentation": {
+    "label": "BNB-COIN1",
+    "purpose": "Educational illustration of agent memory. Not financial advice or a recommendation to trade.",
+    "identity": "This label and generic coin icon are placeholders, not real or BNB Chain-issued assets.",
+    "redactions": "Original asset names, contracts, named participants, direct source links and original request bodies are omitted. This is a redacted presentation record, not an original model receipt.",
+    "scope": "Historical chart values and recorded outputs are retained. The earlier policy tested narrative context; it did not measure community reaction or establish price causation."
+  },
+  "caseId": "coin1",
+  "model": "typesafe/jev-1.13-20260917",
+  "cutoff": "2025-03-17T07:45:00Z",
+  "policyVersion": "historical-linked-attention-signal-v2",
+  "summary": {
+    "repeatCount": 3,
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.12333333333333334,
+    "withEntryProbability": 0.9066666666666667
+  },
+  "sources": [
+    {
+      "id": "coin1-source-1",
+      "title": "Project links tutorial to token",
+      "url": "/assets/examples/coin1-record.json#coin1-source-1",
+      "publishedAt": "2025-02-11T14:13:46.311Z",
+      "availableAt": "2025-02-11T14:13:46.311Z",
+      "attribution": "Redacted project or token record",
+      "content": "The example project says it created a testnet example for this video and later made a mainnet BNB-COIN1 version available. This is the project’s own earlier identity claim, linked to the same tutorial; it does not establish official backing."
+    },
+    {
+      "id": "coin1-source-2",
+      "title": "Earlier tutorial clarification",
+      "url": "/assets/examples/coin1-record.json#coin1-source-2",
+      "publishedAt": "2025-02-06T12:24:11.670Z",
+      "availableAt": "2025-02-06T12:24:11.670Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "An earlier public clarification explains that an example token appeared in a BNB Chain tutorial without being an official or endorsed token. The record preserves the distinction between an educational example and token affiliation."
+    },
+    {
+      "id": "coin1-source-3",
+      "title": "Tutorial discussion",
+      "url": "/assets/examples/coin1-record.json#coin1-source-3",
+      "publishedAt": "2025-03-17T07:44:49.530Z",
+      "availableAt": "2025-03-17T07:44:49.530Z",
+      "attribution": "Public discussion (identities omitted)",
+      "content": "A BNB Chain token-creation tutorial reappears in a discussion about AI-assisted building. The post asks for examples and does not name BNB-COIN1. The earlier project narrative supplies the separate token connection."
+    }
+  ],
+  "outputs": [
+    {
+      "repeat": 1,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.93,
+          "probabilities": {
+            "direct": 0.04,
+            "prior_link": 0.01,
+            "unresolved": 0.95,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.93,
+          "probabilities": {
+            "new_attention": 0.94,
+            "belief_revision": 0,
+            "unclear": 0.01,
+            "routine": 0.05
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.76,
+          "probabilities": {
+            "ignore": 0.04,
+            "watch": 0.85,
+            "entry_candidate": 0.11
+          }
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.92,
+          "probabilities": {
+            "prior_link": 0.94,
+            "direct": 0.04,
+            "unresolved": 0.02,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.99,
+          "probabilities": {
+            "routine": 0,
+            "unclear": 0,
+            "belief_revision": 0,
+            "new_attention": 1
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.86,
+          "probabilities": {
+            "ignore": 0.01,
+            "watch": 0.08,
+            "entry_candidate": 0.91
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.92,
+          "probabilities": {
+            "direct": 0.03,
+            "contradicted": 0,
+            "prior_link": 0.95,
+            "unresolved": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.99,
+          "probabilities": {
+            "unclear": 0,
+            "new_attention": 0.99,
+            "routine": 0,
+            "belief_revision": 0.01
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.87,
+          "probabilities": {
+            "watch": 0.08,
+            "ignore": 0.01,
+            "entry_candidate": 0.91
+          }
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.92,
+          "probabilities": {
+            "unresolved": 0.95,
+            "prior_link": 0.01,
+            "contradicted": 0,
+            "direct": 0.04
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.95,
+          "probabilities": {
+            "belief_revision": 0,
+            "unclear": 0.01,
+            "new_attention": 0.96,
+            "routine": 0.03
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.74,
+          "probabilities": {
+            "ignore": 0.05,
+            "watch": 0.82,
+            "entry_candidate": 0.13
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "current_only",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "unresolved",
+          "confidence": 0.91,
+          "probabilities": {
+            "direct": 0.04,
+            "unresolved": 0.93,
+            "prior_link": 0.02,
+            "contradicted": 0
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.94,
+          "probabilities": {
+            "new_attention": 0.95,
+            "routine": 0.04,
+            "unclear": 0.01,
+            "belief_revision": 0
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "watch",
+          "confidence": 0.74,
+          "probabilities": {
+            "watch": 0.83,
+            "entry_candidate": 0.13,
+            "ignore": 0.04
+          }
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "condition": "with_prior_context",
+      "answers": {
+        "identity_mapping": {
+          "type": "choice",
+          "choice": "prior_link",
+          "confidence": 0.92,
+          "probabilities": {
+            "direct": 0.04,
+            "prior_link": 0.94,
+            "contradicted": 0,
+            "unresolved": 0.02
+          }
+        },
+        "catalyst_change": {
+          "type": "choice",
+          "choice": "new_attention",
+          "confidence": 0.98,
+          "probabilities": {
+            "unclear": 0,
+            "new_attention": 0.98,
+            "routine": 0.01,
+            "belief_revision": 0.01
+          }
+        },
+        "entry_signal": {
+          "type": "choice",
+          "choice": "entry_candidate",
+          "confidence": 0.85,
+          "probabilities": {
+            "watch": 0.09,
+            "ignore": 0.01,
+            "entry_candidate": 0.9
+          }
+        }
+      }
+    }
+  ]
+}

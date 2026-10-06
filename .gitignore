@@ -53,3 +53,7 @@ playwright-report/
 agent/skills/
 skills-lock.json
 design-qa.md
+
+# Local source research and screenshots contain identities excluded from the presentation.
+research/
+qa/

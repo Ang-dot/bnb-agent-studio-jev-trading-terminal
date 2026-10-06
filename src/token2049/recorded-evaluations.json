@@ -1,0 +1,276 @@
+[
+  {
+    "caseId": "coin1",
+    "candidateId": "coin1-historical-example",
+    "cutoff": "2025-03-17T07:45:00Z",
+    "model": "typesafe/jev-1.13-20260917",
+    "policyVersion": "historical-linked-attention-signal-v2",
+    "repeatCount": 3,
+    "receiptUrl": "/assets/examples/coin1-record.json",
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.12333333333333334,
+    "withEntryProbability": 0.9066666666666667,
+    "candidate": {
+      "token": {
+        "symbol": "BNB-COIN1",
+        "chain": "BSC",
+        "assetId": "coin1"
+      },
+      "currentEvidence": [
+        {
+          "id": "coin1-source-3",
+          "title": "Tutorial discussion",
+          "url": "/assets/examples/coin1-record.json#coin1-source-3",
+          "publishedAt": "2025-03-17T07:44:49.530Z",
+          "availableAt": "2025-03-17T07:44:49.530Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A BNB Chain token-creation tutorial reappears in a discussion about AI-assisted building. The post asks for examples and does not name BNB-COIN1. The earlier project narrative supplies the separate token connection."
+        }
+      ],
+      "memoryEvidence": [
+        {
+          "id": "coin1-source-1",
+          "title": "Project links tutorial to token",
+          "url": "/assets/examples/coin1-record.json#coin1-source-1",
+          "publishedAt": "2025-02-11T14:13:46.311Z",
+          "availableAt": "2025-02-11T14:13:46.311Z",
+          "attribution": "Redacted project or token record",
+          "content": "The example project says it created a testnet example for this video and later made a mainnet BNB-COIN1 version available. This is the project’s own earlier identity claim, linked to the same tutorial; it does not establish official backing."
+        },
+        {
+          "id": "coin1-source-2",
+          "title": "Earlier tutorial clarification",
+          "url": "/assets/examples/coin1-record.json#coin1-source-2",
+          "publishedAt": "2025-02-06T12:24:11.670Z",
+          "availableAt": "2025-02-06T12:24:11.670Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "An earlier public clarification explains that an example token appeared in a BNB Chain tutorial without being an official or endorsed token. The record preserves the distinction between an educational example and token affiliation."
+        }
+      ],
+      "limitations": [
+        "Presentation placeholders replace all asset identities, contract addresses, named participants and direct source links.",
+        "Historical chart values and recorded assessment outputs are retained; these examples are not financial advice or trading recommendations."
+      ]
+    }
+  },
+  {
+    "caseId": "coin2",
+    "candidateId": "coin2-historical-example",
+    "cutoff": "2025-09-21T17:08:00Z",
+    "model": "typesafe/jev-1.13-20260917",
+    "policyVersion": "historical-linked-attention-signal-v2",
+    "repeatCount": 3,
+    "receiptUrl": "/assets/examples/coin2-record.json",
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.04666666666666667,
+    "withEntryProbability": 0.5966666666666667,
+    "candidate": {
+      "token": {
+        "symbol": "BNB-COIN2",
+        "chain": "BSC",
+        "assetId": "coin2"
+      },
+      "currentEvidence": [
+        {
+          "id": "coin2-source-6",
+          "title": "Donation clarification",
+          "url": "/assets/examples/coin2-record.json#coin2-source-6",
+          "publishedAt": "2025-09-21T17:07:14.007Z",
+          "availableAt": "2025-09-21T17:07:14.007Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A short reply acknowledges an earlier misunderstanding in the donation discussion. It does not name a token or explain the mechanism by itself; the earlier exchange supplies that context."
+        }
+      ],
+      "memoryEvidence": [
+        {
+          "id": "coin2-source-1",
+          "title": "Education project opens donations",
+          "url": "/assets/examples/coin2-record.json#coin2-source-1",
+          "publishedAt": "2025-09-21T15:07:13.062Z",
+          "availableAt": "2025-09-21T15:07:13.062Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "An education project announces public donations for education, contributor incentives and ecosystem work. Accepting donations does not establish that the recipient created or endorses a token."
+        },
+        {
+          "id": "coin2-source-2",
+          "title": "Donation-fee proposal",
+          "url": "/assets/examples/coin2-record.json#coin2-source-2",
+          "publishedAt": "2025-09-21T16:37:02.514Z",
+          "availableAt": "2025-09-21T16:37:02.514Z",
+          "attribution": "Project proponent (identity omitted)",
+          "content": "The proponent proposes a meme-token donation arrangement in which trading fees would support the education project. This records a participant’s proposal, rather than a verified operating mechanism."
+        },
+        {
+          "id": "coin2-source-3",
+          "title": "Selling-pressure concern",
+          "url": "/assets/examples/coin2-record.json#coin2-source-3",
+          "publishedAt": "2025-09-21T17:01:32.294Z",
+          "availableAt": "2025-09-21T17:01:32.294Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "The stated donation policy is to convert received meme tokens into major crypto assets before spending. The source also describes the potential selling pressure from that policy, giving context to the later mechanism discussion."
+        },
+        {
+          "id": "coin2-source-4",
+          "title": "Proposed donation route",
+          "url": "/assets/examples/coin2-record.json#coin2-source-4",
+          "publishedAt": "2025-09-21T17:03:01.491Z",
+          "availableAt": "2025-09-21T17:03:01.491Z",
+          "attribution": "Project proponent (identity omitted)",
+          "content": "The proponent says the proposed mechanism sends fees as BNB to the recipient, rather than sending meme tokens for the recipient to sell. This is the proponent’s explanation; contract behavior and transfers still require verification."
+        },
+        {
+          "id": "coin2-source-5",
+          "title": "Proponent identifies the market",
+          "url": "/assets/examples/coin2-record.json#coin2-source-5",
+          "publishedAt": "2025-09-21T17:06:14.988Z",
+          "availableAt": "2025-09-21T17:06:14.988Z",
+          "attribution": "Project proponent (identity omitted)",
+          "content": "A participant links a market pairing BNB-COIN2 with the network asset during the donation discussion, and the proponent confirms that reference. This records the proponent’s market identity claim, without validating the proposed fee mechanism."
+        }
+      ],
+      "limitations": [
+        "Presentation placeholders replace all asset identities, contract addresses, named participants and direct source links.",
+        "Historical chart values and recorded assessment outputs are retained; these examples are not financial advice or trading recommendations."
+      ]
+    }
+  },
+  {
+    "caseId": "coin3",
+    "candidateId": "coin3-historical-example",
+    "cutoff": "2025-03-14T15:35:00Z",
+    "model": "typesafe/jev-1.13-20260917",
+    "policyVersion": "historical-linked-attention-signal-v2",
+    "repeatCount": 3,
+    "receiptUrl": "/assets/examples/coin3-record.json",
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.15333333333333332,
+    "withEntryProbability": 0.7533333333333333,
+    "candidate": {
+      "token": {
+        "symbol": "BNB-COIN3",
+        "chain": "BSC",
+        "assetId": "coin3"
+      },
+      "currentEvidence": [
+        {
+          "id": "coin3-source-4",
+          "title": "Photo and greeting",
+          "url": "/assets/examples/coin3-record.json#coin3-source-4",
+          "publishedAt": "2025-03-14T15:33:41.579Z",
+          "availableAt": "2025-03-14T15:33:41.579Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A public post pairs an Arabic expression with a photo and quotes an earlier greeting. It names no token or contract. The earlier community imagery is separate context for the model’s interpretation."
+        }
+      ],
+      "memoryEvidence": [
+        {
+          "id": "coin3-source-1",
+          "title": "Regional business context",
+          "url": "/assets/examples/coin3-record.json#coin3-source-1",
+          "publishedAt": "2025-03-12T23:59:59.999Z",
+          "availableAt": "2025-03-12T23:59:59.999Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A regional investment group announces a minority investment in the ecosystem company. This is regional business context; the recipient is the ecosystem company, not the BNB-COIN3 token."
+        },
+        {
+          "id": "coin3-source-2",
+          "title": "Earlier greeting",
+          "url": "/assets/examples/coin3-record.json#coin3-source-2",
+          "publishedAt": "2025-03-13T09:20:05.854Z",
+          "availableAt": "2025-03-13T09:20:05.854Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "An earlier post uses an Arabic greeting with a crescent-moon emoji. The greeting provides cultural context, without identifying a token contract or establishing token backing."
+        },
+        {
+          "id": "coin3-source-3",
+          "title": "Community meme association",
+          "url": "/assets/examples/coin3-record.json#coin3-source-3",
+          "publishedAt": "2025-03-13T22:07:02.726Z",
+          "availableAt": "2025-03-13T22:07:02.726Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "An image created by a community participant makes a visual association involving the BNB-COIN3 meme. The quote-post reacts to the artwork with a laughing emoji. The association originates in the community image; the post supplies neither a token contract nor official endorsement."
+        }
+      ],
+      "limitations": [
+        "Presentation placeholders replace all asset identities, contract addresses, named participants and direct source links.",
+        "Historical chart values and recorded assessment outputs are retained; these examples are not financial advice or trading recommendations."
+      ]
+    }
+  },
+  {
+    "caseId": "coin4",
+    "candidateId": "coin4-historical-example",
+    "cutoff": "2025-10-05T16:28:00Z",
+    "model": "typesafe/jev-1.13-20260917",
+    "policyVersion": "historical-linked-attention-signal-v2",
+    "repeatCount": 3,
+    "receiptUrl": "/assets/examples/coin4-record.json",
+    "withoutAction": "watch",
+    "withAction": "entry_candidate",
+    "withoutEntryProbability": 0.3633333333333333,
+    "withEntryProbability": 0.9566666666666667,
+    "candidate": {
+      "token": {
+        "symbol": "BNB-COIN4",
+        "chain": "BSC",
+        "assetId": "coin4"
+      },
+      "currentEvidence": [
+        {
+          "id": "coin4-source-5",
+          "title": "The phrase reappears",
+          "url": "/assets/examples/coin4-record.json#coin4-source-5",
+          "publishedAt": "2025-10-05T16:27:41.435Z",
+          "availableAt": "2025-10-05T16:27:41.435Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A public reply repeats the community phrase in a community conversation about relationships and meeting people at an event. Neither the reply nor its parent identifies a token contract; the earlier community and creation records supply that separate connection."
+        }
+      ],
+      "memoryEvidence": [
+        {
+          "id": "coin4-source-1",
+          "title": "The community phrase",
+          "url": "/assets/examples/coin4-record.json#coin4-source-1",
+          "publishedAt": "2025-10-04T14:41:41.943Z",
+          "availableAt": "2025-10-04T14:41:41.943Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A community author introduces an ecosystem-themed version of a Chinese meme blessing ending with the community phrase. This records the community phrase before the token-creation event; the post does not identify a contract."
+        },
+        {
+          "id": "coin4-source-2",
+          "title": "Earlier phrase discussion",
+          "url": "/assets/examples/coin4-record.json#coin4-source-2",
+          "publishedAt": "2025-10-04T15:00:16.772Z",
+          "availableAt": "2025-10-04T15:00:16.772Z",
+          "attribution": "Public discussion (identities omitted)",
+          "content": "A participant thanks the community author and repeats the community phrase. This is a reply about the wording, with no token contract or token endorsement in the post."
+        },
+        {
+          "id": "coin4-source-3",
+          "title": "Token creation record",
+          "url": "/assets/examples/coin4-record.json#coin4-source-3",
+          "publishedAt": "2025-10-04T15:00:41Z",
+          "availableAt": "2025-10-04T15:00:41Z",
+          "attribution": "Redacted project or token record",
+          "content": "A historical creation event on a token-launch platform records the community phrase as the token’s name, alongside its contract on BNB Chain. The on-chain record identifies the asset; it makes no statement about official affiliation or any founder’s endorsement."
+        },
+        {
+          "id": "coin4-source-4",
+          "title": "Community contract claim",
+          "url": "/assets/examples/coin4-record.json#coin4-source-4",
+          "publishedAt": "2025-10-04T16:49:59.769Z",
+          "availableAt": "2025-10-04T16:49:59.769Z",
+          "attribution": "Redacted project or token record",
+          "content": "A community participant supplies the token’s contract and describes his own purchase and narrative interpretation. He also warns that the token could go to zero. The post records that participant’s claims, rather than a verified purchase or a community-wide view."
+        }
+      ],
+      "limitations": [
+        "Presentation placeholders replace all asset identities, contract addresses, named participants and direct source links.",
+        "Historical chart values and recorded assessment outputs are retained; these examples are not financial advice or trading recommendations."
+      ]
+    }
+  }
+]

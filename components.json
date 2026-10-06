@@ -1,0 +1,9 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": { "config": "", "css": "src/token2049/theme.css", "baseColor": "neutral", "cssVariables": true },
+  "aliases": { "components": "@/token2049", "utils": "@/token2049/lib/utils", "ui": "@/token2049/ui", "lib": "@/token2049/lib", "hooks": "@/token2049/hooks" },
+  "iconLibrary": "lucide"
+}

@@ -1,0 +1,9 @@
+.lb-evaluation-record{margin:18px 0;padding:18px 20px;border:1px solid var(--lb-border,#e5e7eb);border-radius:14px;background:var(--lb-surface,#fff);text-align:left}
+.lb-evaluation-record h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:14px;font-weight:650;line-height:1.4;color:var(--lb-text,#20252e)}
+.lb-evaluation-record h3 svg{flex-shrink:0;color:#ad8200}
+.lb-evaluation-record p{margin:8px 0;font-size:12px;line-height:1.7;color:var(--lb-muted,#69717d)}
+.lb-evaluation-record summary{margin-top:12px;cursor:pointer;font-size:12px;line-height:1.6;font-weight:600;color:var(--lb-text,#20252e)}
+.lb-evaluation-record a{display:inline-flex;align-items:center;gap:7px;margin-top:8px;color:var(--lb-text,#20252e);font-size:12px;font-weight:600;text-underline-offset:3px}
+.lb-evaluation-record a:hover{text-decoration:underline;text-decoration-color:#f0b90b}
+.lb-evaluation-record :is(a,summary):focus-visible{outline:2px solid #f0b90b;outline-offset:4px;border-radius:3px}
+@media(max-width:600px){.lb-evaluation-record{padding:15px}}
