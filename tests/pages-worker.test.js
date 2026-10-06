@@ -3,6 +3,26 @@ import worker from '../public/_worker.js';
 const env={BACKEND_ORIGIN:'https://production-example.tyzo.nodeops.app',ORIGIN_SECRET:'server-secret',ASSETS:{fetch:async()=>new Response('static')}};
 const url='https://jev-trading-terminal.pages.dev';
 afterEach(()=>vi.unstubAllGlobals());
+describe('Retired presentation assets',()=>{
+  it.each(['GET','HEAD'])('returns 410 for retired %s files without consulting the asset cache',async method=>{
+    const asset=vi.fn(async()=>new Response('cached identifying file'));
+    const upstream=vi.fn();vi.stubGlobal('fetch',upstream);
+    for(const path of ['/assets/research','/assets/research/old-record.json?download=1','/assets/coins/old-token.png','/assets%2Fresearch/old-record.json','/assets//coins/old-token.png']){
+      const response=await worker.fetch(new Request(url+path,{method,headers:{Range:'bytes=0-100'}}),{...env,ASSETS:{fetch:asset}});
+      expect(response.status).toBe(410);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(await response.text()).toBe('');
+    }
+    expect(asset).not.toHaveBeenCalled();
+    expect(upstream).not.toHaveBeenCalled();
+  });
+  it.each(['/assets/coins/coin.svg','/assets/examples/coin1-record.json','/assets/living-brain-neural.png'])('continues serving %s',async path=>{
+    const asset=vi.fn(async request=>new Response(new URL(request.url).pathname));
+    const response=await worker.fetch(new Request(url+path),{ASSETS:{fetch:asset}});
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe(path);
+  });
+});
 describe('Pages event routes',()=>{
   it.each(['GET','HEAD'])('redirects legacy %s entry points while preserving query strings',async method=>{
     const asset=vi.fn();
